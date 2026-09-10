@@ -60,6 +60,7 @@ link
   --max-candidates <n>     Candidates offered per scenario (default: 5)
   --min-score <n>          Hide candidates below this similarity (default: 0)
   --dry-run                Decide everything, write nothing
+  --order confidence|document  Walk best-ranked first (default), or in order
 
 Baseline
   --baseline <file>        Freeze the criteria listed there: gates ignore them
@@ -126,6 +127,12 @@ function parseFailOn(raw: string | undefined): Verdict[] {
   return verdicts as Verdict[];
 }
 
+function parseOrder(raw: string | undefined): 'confidence' | 'document' | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === 'confidence' || raw === 'document') return raw;
+  throw optionError(`--order expects confidence or document, got ${JSON.stringify(raw)}.`);
+}
+
 interface ParsedCommand {
   command: 'check' | 'link';
   input: CheckInput;
@@ -134,6 +141,7 @@ interface ParsedCommand {
     maxCandidates: number | undefined;
     minScore: number | undefined;
     dryRun: boolean;
+    order: 'confidence' | 'document' | undefined;
   };
   format: 'terminal' | 'json';
   color: boolean;
@@ -172,6 +180,7 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       'max-candidates': { type: 'string' },
       'min-score': { type: 'string' },
       'dry-run': { type: 'boolean' },
+      order: { type: 'string' },
     },
   });
 
@@ -252,6 +261,7 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
           ? undefined
           : parseNumber(values['min-score'], '--min-score', 0, 1),
       dryRun: values['dry-run'] === true,
+      order: parseOrder(values.order),
     },
     format: format as 'terminal' | 'json',
     // NO_COLOR is honoured because a report that lands in a log file should not
@@ -291,6 +301,7 @@ async function runLinkCommand(command: ParsedCommand): Promise<void> {
       limit: command.link.limit,
       minScore: command.link.minScore,
       dryRun: command.link.dryRun,
+      order: command.link.order,
       ask,
     });
 

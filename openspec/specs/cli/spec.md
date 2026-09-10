@@ -121,6 +121,18 @@ what to do instead, rather than answering its own questions in a pipeline.
 - **WHEN** `link` runs with no terminal
 - **THEN** it stops and points at the command that freezes debt without asking anything
 
+### Requirement: An option outside its vocabulary stops the run
+
+The system SHALL reject a value that is not one of the ones an option knows,
+rather than falling back to a default the caller did not ask for.
+
+#### Scenario: An order that does not exist
+
+<!-- openspec-guard:test="exits 2 on an unknown --order" -->
+
+- **WHEN** `--order` names something other than confidence or document
+- **THEN** the command exits 2
+
 ### Requirement: The command can describe itself
 
 The system SHALL print its usage and its version on request, and exit zero.

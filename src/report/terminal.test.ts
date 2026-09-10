@@ -108,6 +108,33 @@ describe('renderTerminal', () => {
     );
   });
 
+  it('ends with the one command to run next', async () => {
+    expect(await render('fail-low-similarity')).toContain('openspec-guard link --limit 20');
+  });
+
+  it('sends a broken selector to the front of the queue', async () => {
+    const output = await render('fail-selector-broken');
+    expect(output).toContain('Next: 1 selector(s) point at a test that does not exist');
+    expect(output).not.toContain('openspec-guard link');
+  });
+
+  it('tells a repository with real debt to freeze it first', async () => {
+    const report = (await runCheck({ cwd: path.join(FIXTURES, 'fail-no-candidate') })).report;
+    const heavy = {
+      ...report,
+      results: Array.from({ length: 60 }, (_, index) => ({
+        ...(report.results[0] as (typeof report.results)[number]),
+        id: `sg_${String(index).padStart(16, '0')}`,
+      })),
+    };
+    const output = renderTerminal(heavy, DEFAULT_TERMINAL_OPTIONS);
+    expect(output).toContain('--update-baseline');
+  });
+
+  it('says nothing about what to do next when there is nothing to do', async () => {
+    expect(await render('pass-explicit')).not.toContain('Next:');
+  });
+
   it('mentions dynamic titles that matching could not see', async () => {
     expect(await render('dynamic-titles')).toContain('could not be read statically');
   });

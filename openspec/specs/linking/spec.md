@@ -48,6 +48,34 @@ are written in different languages the score proposes nothing at all.
 - **WHEN** the chosen test shares its leaf title
 - **THEN** the full describe path is written instead
 
+### Requirement: The most productive scenarios come first
+
+The system SHALL walk the scenarios that have the best ranked candidate first,
+so that a short session is spent where there is something to accept rather than
+on whatever happens to sit at the top of the first file. It SHALL offer the
+document order for anyone working through one file at a time.
+
+#### Scenario: The queue is ordered by what it has to offer
+
+<!-- openspec-guard:test="walks the best-ranked scenarios first" -->
+
+- **WHEN** a repository holds scenarios with and without a ranked candidate
+- **THEN** those with the best candidate are walked first
+
+#### Scenario: A short session
+
+<!-- openspec-guard:test="spends a --limit on the best candidates, not on the first file" -->
+
+- **WHEN** the walk is limited to a single scenario
+- **THEN** that scenario is one with something to accept
+
+#### Scenario: Working through one file at a time
+
+<!-- openspec-guard:test="walks in document order when asked to" -->
+
+- **WHEN** the document order is asked for
+- **THEN** the scenarios are walked as they appear
+
 ### Requirement: The walk answers to the operator, not the other way round
 
 The system SHALL accept a typed title, a non-testable reason, a skip and a

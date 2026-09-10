@@ -127,6 +127,64 @@ function summaryLine(report: Report): string {
 }
 
 /**
+ * The one thing to do next.
+ *
+ * A first run on a real repository returns thousands of criteria. Reporting
+ * that is not the same as being usable: without a next step, the reader sees a
+ * wall and closes the terminal. This picks the single most useful command for
+ * the state the repository is actually in, and says nothing when there is
+ * nothing to do.
+ */
+function nextStep(report: Report): string[] {
+  const actionable = report.results.filter(
+    (result) => !result.baselined && (result.verdict === 'fail' || result.verdict === 'uncertain'),
+  );
+  if (actionable.length === 0) return [];
+
+  const broken = actionable.filter(
+    (result) => result.reason === 'selector-unmatched' || result.reason === 'selector-ambiguous',
+  ).length;
+  if (broken > 0) {
+    return [
+      '',
+      `Next: ${broken} selector(s) point at a test that does not exist, or at several. ` +
+        'Those are a ten-second fix each, and they are listed first above.',
+    ];
+  }
+
+  const withCandidate = actionable.filter((result) => result.match.test !== null).length;
+  const frozen = report.options.baseline !== null;
+
+  if (!frozen && actionable.length >= 50) {
+    return [
+      '',
+      `Next: ${actionable.length} scenarios are uncovered. Freeze today's debt so a gate can`,
+      'be turned on now, and pay it down afterwards:',
+      '',
+      '  openspec-guard check --update-baseline',
+      `  openspec-guard check --baseline ${'.openspec-guard-baseline.json'} --fail-on fail`,
+    ];
+  }
+
+  if (withCandidate > 0) {
+    return [
+      '',
+      `Next: ${withCandidate} of them already have a ranked candidate test. Walk them, ` +
+        'best first:',
+      '',
+      '  openspec-guard link --limit 20',
+    ];
+  }
+
+  return [
+    '',
+    'Next: no candidate could be ranked, so link them by searching the test titles:',
+    '',
+    '  openspec-guard link --limit 20',
+  ];
+}
+
+/**
  * Printed once, and only when similarity provably did nothing on a repository
  * that does have tests and no selectors at all. It describes the algorithm; it
  * is not an excuse.
@@ -205,6 +263,7 @@ export function renderTerminal(report: Report, options: TerminalOptions): string
   }
 
   lines.push(...languageNotice(report));
+  lines.push(...nextStep(report));
 
   if (!report.gates.passed) {
     lines.push('');

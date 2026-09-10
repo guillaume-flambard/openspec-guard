@@ -93,6 +93,12 @@ describe('openspec-guard CLI', () => {
     expect(result.stderr).toContain('--pass-threshold');
   });
 
+  it('exits 2 on an unknown --order', async () => {
+    const result = await cli('link', '--order', 'random');
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('--order');
+  });
+
   it('exits 2 on an unknown --fail-on verdict', async () => {
     const result = await cli('check', '--fail-on', 'broken');
     expect(result.code).toBe(2);

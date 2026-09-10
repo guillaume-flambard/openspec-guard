@@ -124,6 +124,11 @@ Press `1` and the annotation is written under the heading, with the shortest
 selector that still names exactly one test: the leaf title when it is unique,
 the full `describe > it` path when it is not.
 
+The walk is ordered by what it has to offer, best candidate first, so a
+`--limit 20` session is spent on the twenty scenarios with something to accept
+rather than on whatever sits at the top of the first file. `--order document`
+walks them as they appear, for working through one file at a time.
+
 **`/word` is the important key.** On a repository whose specs and tests are
 written in different languages, similarity proposes nothing at all, so scoring
 cannot help you. Searching can: type a word you know is in the test title and
@@ -332,6 +337,7 @@ link
   --max-candidates <n>     Candidates offered per scenario (default: 5)
   --min-score <n>          Hide candidates below this similarity (default: 0)
   --dry-run                Decide everything, write nothing
+  --order confidence|document  Walk best-ranked first (default), or in order
 
 Baseline
   --baseline <file>        Freeze the criteria listed there: gates ignore them

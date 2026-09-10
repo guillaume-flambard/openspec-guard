@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -259,6 +259,60 @@ describe('runLink', () => {
     expect(result.linked).toHaveLength(1);
     expect(result.remaining).toBeGreaterThan(0);
     expect(result.filesWritten).toHaveLength(1);
+  });
+
+  /** The corpus plus one English scenario, so scores are not all zero. */
+  async function mixedCorpus(): Promise<string> {
+    const cwd = await scratch('corpus');
+    const spec = path.join(cwd, 'openspec/specs/console/spec.md');
+    await writeFile(
+      spec,
+      `${await readFile(spec, 'utf8')}
+#### Scenario: Accepts a pen name of twenty-four characters
+
+- **WHEN** a reader submits a name of exactly twenty-four characters
+- **THEN** the system accepts it
+`,
+      'utf8',
+    );
+    return cwd;
+  }
+
+  it('walks the best-ranked scenarios first', async () => {
+    const cwd = await mixedCorpus();
+    const { ask, seen } = scripted();
+    await runLink({ cwd, ask });
+
+    const scores = seen.map((proposal) => proposal.candidates[0]?.score ?? 0);
+    expect(scores).toEqual([...scores].sort((left, right) => right - left));
+    // The point of the order: what has something to offer comes first.
+    expect(scores[0]).toBeGreaterThan(0);
+    expect(scores[scores.length - 1]).toBe(0);
+    expect(seen[0]?.criterion.scenario).toBe('Accepts a pen name of twenty-four characters');
+  });
+
+  it('walks in document order when asked to', async () => {
+    const cwd = await scratch('corpus');
+    const { ask, seen } = scripted();
+    await runLink({ cwd, order: 'document', ask });
+
+    const keys = seen.map(
+      (proposal) => [proposal.criterion.file, proposal.criterion.line] as const,
+    );
+    const sorted = [...keys].sort((left, right) =>
+      left[0] === right[0] ? left[1] - right[1] : left[0] < right[0] ? -1 : 1,
+    );
+    expect(keys).toEqual(sorted);
+  });
+
+  it('spends a --limit on the best candidates, not on the first file', async () => {
+    const cwd = await mixedCorpus();
+    const { ask, seen } = scripted();
+    await runLink({ cwd, limit: 1, ask });
+    expect(seen).toHaveLength(1);
+    // Document order would have spent the single slot on a French scenario
+    // with nothing to offer, which is the whole point of the change.
+    expect(seen[0]?.candidates[0]?.score ?? 0).toBeGreaterThan(0);
   });
 
   it('honours --limit', async () => {

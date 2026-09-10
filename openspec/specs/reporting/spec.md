@@ -151,6 +151,42 @@ nothing because it does not translate.
 - **WHEN** some test titles could not be read statically
 - **THEN** the report says how many, so they are not hunted for in vain
 
+### Requirement: A report ends with the one thing to do next
+
+A first run on a real repository returns thousands of criteria, and reporting
+them is not the same as being usable. The system SHALL name the single most
+useful next command for the state the repository is in, SHALL prefer a broken
+selector over anything else because it is a ten-second fix, and SHALL say
+nothing when there is nothing to do.
+
+#### Scenario: A repository with ranked candidates
+
+<!-- openspec-guard:test="ends with the one command to run next" -->
+
+- **WHEN** uncovered scenarios have a candidate test ranked for them
+- **THEN** the report names the command that walks them
+
+#### Scenario: A selector that points at nothing
+
+<!-- openspec-guard:test="sends a broken selector to the front of the queue" -->
+
+- **WHEN** a selector matches no test
+- **THEN** that is named as the next thing to do, ahead of everything else
+
+#### Scenario: A repository with real debt and no baseline
+
+<!-- openspec-guard:test="tells a repository with real debt to freeze it first" -->
+
+- **WHEN** dozens of scenarios are uncovered and no baseline is in use
+- **THEN** the report names the two commands that freeze the debt and gate on the rest
+
+#### Scenario: Nothing left to do
+
+<!-- openspec-guard:test="says nothing about what to do next when there is nothing to do" -->
+
+- **WHEN** every criterion passes or is declared non-testable
+- **THEN** no next step is printed
+
 ### Requirement: Colour is never forced on a log file
 
 The system SHALL emit no escape sequence when colour is off.
