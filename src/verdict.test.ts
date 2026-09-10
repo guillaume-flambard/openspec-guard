@@ -57,6 +57,7 @@ describe('summarize', () => {
       uncertain: 1,
       fail: 6,
       skip: 1,
+      baselined: 0,
       passBySelector: 2,
       passByHeuristic: 1,
       failNoCandidate: 1,
@@ -66,6 +67,15 @@ describe('summarize', () => {
       failSkippedTest: 1,
       failMissingSelector: 1,
     });
+  });
+
+  it('counts baselined outcomes without changing their verdict', () => {
+    const summary = summarize([
+      { verdict: 'fail', reason: 'no-candidate', baselined: true },
+      { verdict: 'fail', reason: 'no-candidate' },
+    ]);
+    expect(summary.fail).toBe(2);
+    expect(summary.baselined).toBe(1);
   });
 
   it('always has passBySelector plus passByHeuristic equal to pass', () => {

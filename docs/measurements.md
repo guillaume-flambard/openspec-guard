@@ -87,6 +87,37 @@ the test titles describe the function under test ("falls back to the local part
 of the email"). Even that is not reliably close enough for a 0.6 Jaccard. The
 selector is not a fallback for messy repositories; it is the mechanism.
 
+## What the baseline does to those numbers
+
+The bilingual monorepo above is the case the baseline exists for. Measured on a
+copy of it, with the built CLI:
+
+```
+openspec-guard check --fail-on fail                       -> exit 1
+openspec-guard check --update-baseline                    -> 536 frozen
+openspec-guard check --baseline ... --fail-on fail        -> exit 0
+```
+
+The verdicts do not change. 534 criteria still read `fail`, and the report still
+says so. Only the gate looks away, and only at what was already there.
+
+Then one scenario is added to a spec, with no test:
+
+```
+FAIL  no candidate test (no shared word)  (1)
+  account/erasure   Un scenario ajoute apres le gel  (openspec/specs/account/erasure/spec.md:55)
+
+537 criteria: 0 pass, 2 uncertain, 535 fail, 0 skip, 536 of them frozen by the baseline
+gate: 1 criteria with verdict 'fail', forbidden by --fail-on
+```
+
+Exit 1, and exactly one actionable line out of 537 criteria. That is the
+difference between a tool a team can adopt on a Tuesday and a tool that prints
+five hundred red lines and gets uninstalled.
+
+The frozen file is 136 kB of sorted JSON for those 536 entries, with no
+timestamp, so it diffs cleanly in review.
+
 ## Why the defaults are what they are
 
 The `--min-shared-terms 2` floor is doing real work: without it, every

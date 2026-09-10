@@ -21,6 +21,19 @@ export {
   OpenSpecGuardError,
   type ErrorCode,
 } from './errors.js';
+export {
+  buildBaseline,
+  diffBaseline,
+  isBaselined,
+  loadBaseline,
+  staleEntries,
+  writeBaseline,
+  DEFAULT_BASELINE_PATH,
+  BASELINE_SCHEMA_VERSION,
+  type Baseline,
+  type BaselineEntry,
+  type BaselineFile,
+} from './baseline.js';
 export { renderJson } from './report/json.js';
 export {
   renderTerminal,

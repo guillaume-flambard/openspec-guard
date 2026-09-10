@@ -80,6 +80,34 @@ describe('renderTerminal', () => {
     expect(output).toContain("gate: 1 criteria with verdict 'fail'");
   });
 
+  it('folds baselined criteria out of the actionable groups', async () => {
+    const report = {
+      ...(await runCheck({ cwd: path.join(FIXTURES, 'fail-no-candidate') })).report,
+    };
+    const frozen = {
+      ...report,
+      summary: { ...report.summary, baselined: 1 },
+      results: report.results.map((result) => ({ ...result, baselined: true })),
+    };
+    const output = renderTerminal(frozen, DEFAULT_TERMINAL_OPTIONS);
+    expect(output).not.toContain('no candidate test');
+    expect(output).toContain('1 of them frozen by the baseline');
+  });
+
+  it('says when baseline entries no longer match anything', async () => {
+    const report = (await runCheck({ cwd: path.join(FIXTURES, 'pass-explicit') })).report;
+    const stale = {
+      ...report,
+      diagnostics: {
+        ...report.diagnostics,
+        staleBaselineEntries: [{ id: 'sg_dead', scenario: 'gone', file: 'a/spec.md' }],
+      },
+    };
+    expect(renderTerminal(stale, DEFAULT_TERMINAL_OPTIONS)).toContain(
+      'Prune with --update-baseline',
+    );
+  });
+
   it('mentions dynamic titles that matching could not see', async () => {
     expect(await render('dynamic-titles')).toContain('could not be read statically');
   });

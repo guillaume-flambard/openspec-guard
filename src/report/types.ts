@@ -41,6 +41,8 @@ export interface CriterionResult {
   operation: DeltaOperation;
   /** `false` when the source heading was not `#### Scenario: ...`. */
   namedScenario: boolean;
+  /** True when a baseline is holding this criterion back from the gate. */
+  baselined: boolean;
   source: { file: string; line: number };
   selector: string | null;
   nonTestableReason: string | null;
@@ -60,6 +62,8 @@ export interface ReportInput {
 }
 
 export interface ReportOptions {
+  /** Path of the baseline in use, relative to cwd. */
+  baseline: string | null;
   failOn: Verdict[];
   minPass: number | null;
   heuristic: boolean;
@@ -71,6 +75,8 @@ export interface ReportOptions {
 
 export interface ReportDiagnostics {
   parseWarnings: { file: string; line: number; code: string; message: string }[];
+  /** Baseline entries matching no current criterion: prune them. */
+  staleBaselineEntries: { id: string; scenario: string; file: string }[];
   unparsedFiles: { file: string; message: string }[];
   dynamicTitles: { file: string; line: number; reason: string }[];
 }

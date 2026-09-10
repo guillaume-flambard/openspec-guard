@@ -91,6 +91,44 @@ Four verdicts, and a reason that says what to do about it.
 A skipped test never counts as coverage. `it.skip` is exactly the state
 OpenSpec Guard exists to reveal, so it produces `fail`, never `skip`.
 
+## Adopting on an existing repository
+
+A repository that has been writing specs for a while will start with hundreds
+of uncovered scenarios. Fixing them all before turning the gate on means the
+gate never gets turned on, so freeze them instead:
+
+```bash
+openspec-guard check --update-baseline
+git add .openspec-guard-baseline.json
+```
+
+Then gate on what is new:
+
+```bash
+openspec-guard check --baseline .openspec-guard-baseline.json --fail-on fail
+```
+
+Today's debt is recorded and ignored by the gate. A scenario added tomorrow
+without a test fails the build.
+
+The baseline is a committed JSON file, sorted, with no timestamp, so it diffs
+cleanly in a pull request and a reviewer can see exactly what was frozen.
+
+Three things it deliberately does **not** let you get away with:
+
+- **A new scenario is never frozen.** Only what existed at freeze time is.
+- **A different kind of failure stops being suppressed.** If a criterion was
+  frozen as `no-candidate` and now reads `selector-unmatched`, someone wrote a
+  selector pointing at a test that does not exist. That is a fresh mistake, not
+  old debt, and the gate fires.
+- **Rewriting a scenario un-freezes it.** Criterion ids hash the scenario text,
+  so an edited scenario gets a new id, its entry stops matching, and you are
+  asked about its test again. Which is the right moment to ask.
+
+Entries that no longer match anything, because the scenario was fixed,
+rewritten or deleted, are reported so the file can be pruned with
+`--update-baseline` instead of growing forever.
+
 ## Exit codes
 
 | Code | Meaning                                                   |
@@ -149,6 +187,10 @@ Output
   --verbose                Print every row, including passes and skips
   --no-color               Never emit ANSI colour
   --max-rows <n>           Rows per group before truncation (default: 20)
+
+Baseline
+  --baseline <file>        Freeze the criteria listed there: gates ignore them
+  --update-baseline        Rewrite the baseline from this run, then exit 0
 
 Gates
   --fail-on <list>         Verdicts that must not appear

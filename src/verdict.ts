@@ -29,6 +29,8 @@ export function decideVerdict(reason: MatchReason): Verdict {
 export interface CriterionOutcome {
   verdict: Verdict;
   reason: MatchReason;
+  /** Suppressed by the baseline: known debt, not a new regression. */
+  baselined?: boolean;
 }
 
 export interface Summary {
@@ -37,6 +39,8 @@ export interface Summary {
   uncertain: number;
   fail: number;
   skip: number;
+  /** Criteria a baseline is holding back. Gates ignore these. */
+  baselined: number;
   /** Splits the asserted from the guessed. A pass earned by selector and a
    *  pass earned by similarity are not worth the same thing. */
   passBySelector: number;
@@ -56,6 +60,7 @@ export function summarize(outcomes: readonly CriterionOutcome[]): Summary {
     uncertain: 0,
     fail: 0,
     skip: 0,
+    baselined: 0,
     passBySelector: 0,
     passByHeuristic: 0,
     failNoCandidate: 0,
@@ -68,6 +73,7 @@ export function summarize(outcomes: readonly CriterionOutcome[]): Summary {
 
   for (const outcome of outcomes) {
     summary[outcome.verdict] += 1;
+    if (outcome.baselined === true) summary.baselined += 1;
     switch (outcome.reason) {
       case 'selector':
         summary.passBySelector += 1;

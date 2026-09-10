@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -109,6 +111,33 @@ describe('openspec-guard CLI', () => {
     expect(result.stderr).toContain('E_ANNOTATION_CONFLICT');
     expect(result.stderr).toContain('E_ANNOTATION_SYNTAX');
     expect(result.stderr).toContain('Nothing was checked.');
+  });
+
+  it('refuses a baseline that does not exist, with exit 2', async () => {
+    const result = await cli('check', '--cwd', fixture('pass-explicit'), '--baseline', 'nope.json');
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('E_BASELINE_NOT_FOUND');
+  });
+
+  it('announces a baseline write on stderr, keeping stdout clean', async () => {
+    const workspace = await mkdtemp(path.join(tmpdir(), 'openspec-guard-cli-'));
+    try {
+      await cp(fixture('fail-no-candidate'), workspace, { recursive: true });
+      const result = await cli(
+        'check',
+        '--cwd',
+        workspace,
+        '--update-baseline',
+        '--format',
+        'json',
+      );
+      expect(result.code).toBe(0);
+      expect(result.stderr).toContain('Baseline written to');
+      // stdout still holds the document, and only the document.
+      expect(JSON.parse(result.stdout)).toHaveProperty('schemaVersion', 1);
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
   });
 
   it('emits no colour when stdout is a pipe', async () => {

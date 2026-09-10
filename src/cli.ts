@@ -52,6 +52,10 @@ Output
   --no-color               Never emit ANSI colour
   --max-rows <n>           Rows per group before truncation (default: 20)
 
+Baseline
+  --baseline <file>        Freeze the criteria listed there: gates ignore them
+  --update-baseline        Rewrite the baseline from this run, then exit 0
+
 Gates
   --fail-on <list>         Comma-separated verdicts that must not appear,
                            among pass, uncertain, fail, skip
@@ -71,6 +75,13 @@ OpenSpec syntax. Put it directly under the scenario heading:
 
 Similarity is a convenience for repositories whose specs and tests are written
 in the same language. It compares words; it does not translate them.
+
+Adopting this on an existing repository starts with:
+
+  openspec-guard check --update-baseline
+  openspec-guard check --baseline .openspec-guard-baseline.json --fail-on fail
+
+which freezes today's uncovered scenarios and fails only on new ones.
 `;
 
 const VERDICTS = new Set<Verdict>(['pass', 'uncertain', 'fail', 'skip']);
@@ -139,6 +150,8 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       'pass-threshold': { type: 'string' },
       'uncertain-threshold': { type: 'string' },
       'min-shared-terms': { type: 'string' },
+      baseline: { type: 'string' },
+      'update-baseline': { type: 'boolean' },
     },
   });
 
@@ -198,6 +211,8 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       values['min-shared-terms'] === undefined
         ? undefined
         : parseNumber(values['min-shared-terms'], '--min-shared-terms', 0, 100),
+    baseline: values.baseline,
+    updateBaseline: values['update-baseline'],
   };
 
   return {
@@ -241,7 +256,17 @@ export async function main(argv: readonly string[]): Promise<void> {
   }
 
   try {
-    const { report, exitCode } = await runCheck(command.input);
+    const { report, exitCode, baselineUpdate } = await runCheck(command.input);
+
+    if (baselineUpdate) {
+      const { file, diff, total } = baselineUpdate;
+      // Straight to stderr: --update-baseline is a maintenance action, and a
+      // caller piping --format json still gets only the document on stdout.
+      process.stderr.write(
+        `Baseline written to ${file}: ${total} frozen criteria ` +
+          `(+${diff.added.length}, -${diff.removed.length}).\n`,
+      );
+    }
 
     if (command.format === 'json') {
       process.stdout.write(renderJson(report));

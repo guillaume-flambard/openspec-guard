@@ -106,9 +106,11 @@ function summaryLine(report: Report): string {
     summary.pass > 0
       ? ` (${summary.passBySelector} by selector, ${summary.passByHeuristic} by similarity)`
       : '';
+  const frozen =
+    summary.baselined > 0 ? `, ${summary.baselined} of them frozen by the baseline` : '';
   return (
     `${summary.total} criteria: ${summary.pass} pass${split}, ` +
-    `${summary.uncertain} uncertain, ${summary.fail} fail, ${summary.skip} skip`
+    `${summary.uncertain} uncertain, ${summary.fail} fail, ${summary.skip} skip${frozen}`
   );
 }
 
@@ -140,8 +142,11 @@ function languageNotice(report: Report): string[] {
 export function renderTerminal(report: Report, options: TerminalOptions): string {
   const lines: string[] = [...headerOf(report)];
 
+  // Baselined criteria are frozen debt. They are counted, never listed among
+  // the things to act on, or the report is back to being a wall of red.
   const byReason = new Map<MatchReason, CriterionResult[]>();
   for (const result of report.results) {
+    if (result.baselined) continue;
     const bucket = byReason.get(result.reason);
     if (bucket) bucket.push(result);
     else byReason.set(result.reason, [result]);
@@ -168,6 +173,14 @@ export function renderTerminal(report: Report, options: TerminalOptions): string
   }
 
   lines.push(summaryLine(report));
+
+  const stale = report.diagnostics.staleBaselineEntries.length;
+  if (stale > 0) {
+    lines.push(
+      `${stale} baseline entr${stale === 1 ? 'y matches' : 'ies match'} nothing any more ` +
+        '(fixed, rewritten or deleted). Prune with --update-baseline.',
+    );
+  }
 
   if (report.diagnostics.dynamicTitles.length > 0) {
     lines.push(

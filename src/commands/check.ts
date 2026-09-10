@@ -1,5 +1,17 @@
 import { readFile } from 'node:fs/promises';
 
+import {
+  buildBaseline,
+  DEFAULT_BASELINE_PATH,
+  diffBaseline,
+  isBaselined,
+  loadBaseline,
+  staleEntries,
+  writeBaseline,
+  type Baseline,
+  type BaselineCandidate,
+  type BaselineDiff,
+} from '../baseline.js';
 import { buildCriteria } from '../criteria.js';
 import { discover, type DiscoveryOptions } from '../discovery.js';
 import { EXIT_GATE, EXIT_INPUT, EXIT_OK, OpenSpecGuardError } from '../errors.js';
@@ -33,11 +45,17 @@ export interface CheckInput extends DiscoveryOptions {
   passThreshold?: number | undefined;
   uncertainThreshold?: number | undefined;
   minSharedTerms?: number | undefined;
+  /** Path to a baseline, relative to cwd. */
+  baseline?: string | undefined;
+  /** Rewrite the baseline from this run instead of checking against it. */
+  updateBaseline?: boolean | undefined;
 }
 
 export interface CheckOutcome {
   report: Report;
   exitCode: number;
+  /** Present only when the run rewrote a baseline. */
+  baselineUpdate?: { file: string; diff: BaselineDiff; total: number };
 }
 
 function toRef(candidate: Candidate | null): TestRef | null {
@@ -71,6 +89,20 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
   // once rather than reporting a run built on a spec we could not read.
   if (errors.length > 0) throw new AnnotationErrors(errors);
 
+  const baselinePath =
+    input.updateBaseline === true ? (input.baseline ?? DEFAULT_BASELINE_PATH) : input.baseline;
+  // When updating, an absent file is the normal first case, so it is read
+  // leniently. When checking, a missing baseline is an error: a typo in the
+  // path would otherwise un-suppress everything and fail a build silently.
+  let baseline: Baseline | null = null;
+  if (input.baseline !== undefined) {
+    if (input.updateBaseline === true) {
+      baseline = await loadBaseline(cwdOf(input), input.baseline).catch(() => null);
+    } else {
+      baseline = await loadBaseline(cwdOf(input), input.baseline);
+    }
+  }
+
   const detection = detectRunner(discovery.manifests, discovery.runnerConfigFiles, input.runner);
 
   const titles: TestTitle[] = [];
@@ -94,10 +126,21 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
 
   const index = buildTestIndex(titles);
   const outcomes: CriterionOutcome[] = [];
+  const candidates: BaselineCandidate[] = [];
   const results: CriterionResult[] = criteria.map((criterion) => {
     const match = matchCriterion(criterion, index, options);
     const verdict = decideVerdict(match.reason);
-    outcomes.push({ verdict, reason: match.reason });
+    const candidate: BaselineCandidate = {
+      id: criterion.id,
+      verdict,
+      reason: match.reason,
+      capability: criterion.capability,
+      scenario: criterion.scenario,
+      file: criterion.file,
+    };
+    candidates.push(candidate);
+    const suppressed = isBaselined(baseline, candidate);
+    outcomes.push({ verdict, reason: match.reason, baselined: suppressed });
 
     return {
       id: criterion.id,
@@ -108,6 +151,7 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
       scenario: criterion.scenario,
       operation: criterion.operation,
       namedScenario: criterion.isNamedScenario,
+      baselined: suppressed,
       source: { file: criterion.file, line: criterion.line },
       selector: criterion.annotation?.kind === 'test' ? criterion.annotation.selector : null,
       nonTestableReason:
@@ -127,7 +171,12 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
   const summary = summarize(outcomes);
   const failOn = input.failOn ?? [];
   const minPass = input.minPass ?? null;
-  const gates = evaluateGates(summary, { failOn, minPass });
+  // Gates see only what the baseline does not already hold back. That is the
+  // whole point: freeze the debt, fail on what is new.
+  const gates = evaluateGates(summarize(outcomes.filter((outcome) => outcome.baselined !== true)), {
+    failOn,
+    minPass,
+  });
 
   const report: Report = {
     schemaVersion: SCHEMA_VERSION,
@@ -143,6 +192,7 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
       removedScenarioCount,
     },
     options: {
+      baseline: baselinePath ?? null,
       failOn,
       minPass,
       heuristic: options.heuristic,
@@ -163,12 +213,38 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
           message: warning.message,
         })),
       ),
+      staleBaselineEntries: staleEntries(baseline, candidates).map((entry) => ({
+        id: entry.id,
+        scenario: entry.scenario,
+        file: entry.file,
+      })),
       unparsedFiles,
       dynamicTitles,
     },
   };
 
+  if (input.updateBaseline === true) {
+    const next = buildBaseline(candidates);
+    const target = input.baseline ?? DEFAULT_BASELINE_PATH;
+    await writeBaseline(cwdOf(input), target, next);
+    // Writing a baseline is a maintenance action, not a check, so it never
+    // fails a gate: the point is to record reality, whatever it is.
+    return {
+      report,
+      exitCode: EXIT_OK,
+      baselineUpdate: {
+        file: target,
+        diff: diffBaseline(baseline, next),
+        total: next.entries.length,
+      },
+    };
+  }
+
   return { report, exitCode: gates.passed ? EXIT_OK : EXIT_GATE };
+}
+
+function cwdOf(input: CheckInput): string {
+  return input.cwd;
 }
 
 /** Carries every annotation error so the CLI can print them all at once. */

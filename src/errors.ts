@@ -30,6 +30,9 @@ export type ErrorCode =
   | 'E_ANNOTATION_UNKNOWN'
   | 'E_ANNOTATION_EMPTY_REASON'
   | 'E_ANNOTATION_MISPLACED'
+  // Baseline
+  | 'E_BASELINE_NOT_FOUND'
+  | 'E_BASELINE_INVALID'
   // Options
   | 'E_OPTION';
 
