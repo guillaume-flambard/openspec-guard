@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only by default. Nothing in this workflow writes to the repository.
+permissions:
+  contents: read
+
+# A new push on the same branch supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile: CI installs what the lockfile says, or fails.
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+      - run: pnpm format
+      - run: pnpm typecheck
+
+      # The build runs before the tests on purpose: tests/cli.test.ts drives the
+      # built artifact in a subprocess, not the sources.
+      - run: pnpm build
+      - run: pnpm test
+
+      # SpecGuard checking its own fixture corpus. It is not a gate here: the
+      # corpus deliberately contains failing cases.
+      - name: Self check
+        run: node dist/cli.js check --cwd tests/fixtures/corpus --include-changes
