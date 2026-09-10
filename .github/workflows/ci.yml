@@ -60,7 +60,11 @@ jobs:
       # The Action, run as the runner would run it, against a fixture that is
       # known to fail: proof the bundle loads and that the gate turns the step
       # red for the right reason.
+      # Driven through working-directory, not by overriding GITHUB_WORKSPACE:
+      # the runner re-injects its own GITHUB_* variables after the step's env,
+      # so that override is silently ignored and the action runs at the repo
+      # root, where there is no spec directory.
       - name: The action bundle runs
         run: node action-dist/index.cjs
         env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}/tests/fixtures/pass-explicit
+          INPUT_WORKING-DIRECTORY: tests/fixtures/pass-explicit
