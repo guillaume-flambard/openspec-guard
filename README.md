@@ -65,6 +65,14 @@ repositories whose specs and tests are written in the same language. On a
 bilingual repository, run with `--require-selector` and get an honest report
 instead of a wall of near-zero scores.
 
+Where the languages do match, similarity earns its place. Measured on five
+public repositories, 8,860 criteria in total: 2 to 10 percent of criteria pass
+outright, the median passing match shares four to five significant words, and
+none of those passes looked wrong on inspection. Most of the rest lands in
+`uncertain`, which is less a shrug than a work queue: about half of that band is
+the right test, one keypress away in `openspec-guard link`. Numbers in
+[docs/measurements.md](docs/measurements.md).
+
 The report always separates the asserted from the guessed:
 
 ```
