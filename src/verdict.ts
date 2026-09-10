@@ -41,6 +41,14 @@ export interface Summary {
   skip: number;
   /** Criteria a baseline is holding back. Gates ignore these. */
   baselined: number;
+  /**
+   * Percentage of checkable criteria that are linked to a test, one decimal.
+   *
+   * The denominator excludes `skip`, because a scenario declared non-testable
+   * with a reason is a decision that was made, not a gap. A repository with no
+   * checkable criterion at all reads 100: there is nothing left to cover.
+   */
+  coverage: number;
   /** Splits the asserted from the guessed. A pass earned by selector and a
    *  pass earned by similarity are not worth the same thing. */
   passBySelector: number;
@@ -61,6 +69,7 @@ export function summarize(outcomes: readonly CriterionOutcome[]): Summary {
     fail: 0,
     skip: 0,
     baselined: 0,
+    coverage: 0,
     passBySelector: 0,
     passByHeuristic: 0,
     failNoCandidate: 0,
@@ -105,6 +114,9 @@ export function summarize(outcomes: readonly CriterionOutcome[]): Summary {
     }
   }
 
+  const checkable = summary.total - summary.skip;
+  summary.coverage = checkable === 0 ? 100 : Math.round((1000 * summary.pass) / checkable) / 10;
+
   return summary;
 }
 
@@ -113,6 +125,8 @@ export interface Gates {
   failOn: Verdict[];
   /** Minimum number of `pass`. `null` means no gate. */
   minPass: number | null;
+  /** Minimum percentage of checkable criteria linked to a test. */
+  minCoverage: number | null;
 }
 
 export interface GateResult {
@@ -120,8 +134,20 @@ export interface GateResult {
   violations: string[];
 }
 
-/** Both gates apply. If both are violated, both are reported. */
-export function evaluateGates(summary: Summary, gates: Gates): GateResult {
+/**
+ * Every gate applies, and every violation is reported.
+ *
+ * `summary` is what the baseline does not hold back: `--fail-on` and
+ * `--min-pass` are about what is new. `overall` is the whole repository, and
+ * `--min-coverage` reads that one on purpose. Freezing debt must not make
+ * coverage go up, or the baseline becomes a way to report a number that is not
+ * true.
+ */
+export function evaluateGates(
+  summary: Summary,
+  gates: Gates,
+  overall: Summary = summary,
+): GateResult {
   const violations: string[] = [];
 
   for (const verdict of gates.failOn) {
@@ -133,6 +159,13 @@ export function evaluateGates(summary: Summary, gates: Gates): GateResult {
 
   if (gates.minPass !== null && summary.pass < gates.minPass) {
     violations.push(`${summary.pass} pass, --min-pass requires at least ${gates.minPass}`);
+  }
+
+  if (gates.minCoverage !== null && overall.coverage < gates.minCoverage) {
+    violations.push(
+      `${overall.coverage}% of checkable criteria are linked, ` +
+        `--min-coverage requires at least ${gates.minCoverage}%`,
+    );
   }
 
   return { passed: violations.length === 0, violations };

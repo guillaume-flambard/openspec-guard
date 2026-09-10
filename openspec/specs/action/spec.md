@@ -33,6 +33,13 @@ its working directory from the workspace.
 - **WHEN** an input name contains a hyphen
 - **THEN** it is read, because the runner keeps hyphens and only replaces spaces
 
+#### Scenario: The coverage floor as an input
+
+<!-- openspec-guard:test="reads the coverage floor" -->
+
+- **WHEN** the coverage floor is given as an input
+- **THEN** it is read as a number and applied
+
 #### Scenario: A list input
 
 <!-- openspec-guard:test="splits a list input on commas and newlines" -->
@@ -127,6 +134,13 @@ and list the gate violations when there are any.
 
 - **WHEN** a run succeeds
 - **THEN** the summary holds the counts and the split between selector and similarity
+
+#### Scenario: The coverage in the summary
+
+<!-- openspec-guard:test="states the coverage percentage" -->
+
+- **WHEN** a summary is written
+- **THEN** it states the percentage and the number of criteria it was computed over
 
 #### Scenario: A run that violates a gate
 

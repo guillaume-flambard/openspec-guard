@@ -121,6 +121,27 @@ describe('--baseline', () => {
     expect(report.options.baseline).toBe(DEFAULT_BASELINE_PATH);
   });
 
+  it('never raises the coverage number', async () => {
+    const cwd = await scratch('fail-no-candidate');
+    const before = (await check(cwd)).report.summary.coverage;
+    await check(cwd, { updateBaseline: true });
+    const after = await check(cwd, { baseline: DEFAULT_BASELINE_PATH, failOn: ['fail'] });
+
+    // The gate passes because the debt is frozen. The number does not move,
+    // because freezing debt is not covering it.
+    expect(after.exitCode).toBe(EXIT_OK);
+    expect(after.report.summary.coverage).toBe(before);
+    expect(after.report.summary.coverage).toBe(0);
+
+    // And the coverage floor still sees the truth.
+    const floored = await check(cwd, {
+      baseline: DEFAULT_BASELINE_PATH,
+      failOn: ['fail'],
+      minCoverage: 50,
+    });
+    expect(floored.exitCode).toBe(EXIT_GATE);
+  });
+
   it('fails on a scenario added after the freeze', async () => {
     const cwd = await scratch('fail-no-candidate');
     await check(cwd, { updateBaseline: true });

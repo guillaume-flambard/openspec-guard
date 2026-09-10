@@ -58,6 +58,7 @@ describe('summarize', () => {
       fail: 6,
       skip: 1,
       baselined: 0,
+      coverage: 30,
       passBySelector: 2,
       passByHeuristic: 1,
       failNoCandidate: 1,
@@ -78,6 +79,31 @@ describe('summarize', () => {
     expect(summary.baselined).toBe(1);
   });
 
+  it('computes coverage over the criteria that can be covered', () => {
+    // Three pass, one skip, six fail: the skip leaves the denominator.
+    const summary = summarize([
+      { verdict: 'pass', reason: 'selector' },
+      { verdict: 'pass', reason: 'selector' },
+      { verdict: 'pass', reason: 'heuristic' },
+      { verdict: 'skip', reason: 'non-testable' },
+      ...Array.from({ length: 6 }, () => ({ verdict: 'fail', reason: 'no-candidate' }) as const),
+    ]);
+    expect(summary.coverage).toBe(33.3);
+  });
+
+  it('reads 100 when there is nothing left to cover', () => {
+    expect(summarize([{ verdict: 'skip', reason: 'non-testable' }]).coverage).toBe(100);
+    expect(summarize([]).coverage).toBe(100);
+  });
+
+  it('does not count an uncertain criterion as covered', () => {
+    const summary = summarize([
+      { verdict: 'pass', reason: 'selector' },
+      { verdict: 'uncertain', reason: 'heuristic-weak' },
+    ]);
+    expect(summary.coverage).toBe(50);
+  });
+
   it('always has passBySelector plus passByHeuristic equal to pass', () => {
     const summary = summarize([
       { verdict: 'pass', reason: 'selector' },
@@ -93,14 +119,20 @@ function summaryOf(partial: Partial<Summary>): Summary {
 
 describe('evaluateGates', () => {
   it('passes when no gate is set', () => {
-    expect(evaluateGates(summaryOf({ fail: 5 }), { failOn: [], minPass: null })).toEqual({
+    expect(
+      evaluateGates(summaryOf({ fail: 5 }), { failOn: [], minPass: null, minCoverage: null }),
+    ).toEqual({
       passed: true,
       violations: [],
     });
   });
 
   it('fails on a forbidden verdict', () => {
-    const result = evaluateGates(summaryOf({ fail: 3 }), { failOn: ['fail'], minPass: null });
+    const result = evaluateGates(summaryOf({ fail: 3 }), {
+      failOn: ['fail'],
+      minPass: null,
+      minCoverage: null,
+    });
     expect(result.passed).toBe(false);
     expect(result.violations).toEqual(["3 criteria with verdict 'fail', forbidden by --fail-on"]);
   });
@@ -110,19 +142,53 @@ describe('evaluateGates', () => {
       evaluateGates(summaryOf({ fail: 0, uncertain: 0 }), {
         failOn: ['fail', 'uncertain'],
         minPass: null,
+        minCoverage: null,
       }).passed,
     ).toBe(true);
   });
 
   it('fails when min-pass is not reached', () => {
-    const result = evaluateGates(summaryOf({ pass: 4 }), { failOn: [], minPass: 5 });
+    const result = evaluateGates(summaryOf({ pass: 4 }), {
+      failOn: [],
+      minPass: 5,
+      minCoverage: null,
+    });
     expect(result.violations).toEqual(['4 pass, --min-pass requires at least 5']);
+  });
+
+  it('fails when coverage is below the floor', () => {
+    const result = evaluateGates(summaryOf({ coverage: 42.5 }), {
+      failOn: [],
+      minPass: null,
+      minCoverage: 80,
+    });
+    expect(result.passed).toBe(false);
+    expect(result.violations[0]).toContain('42.5%');
+    expect(result.violations[0]).toContain('at least 80%');
+  });
+
+  it('reads coverage on the whole repository, so a baseline never raises it', () => {
+    // What the baseline does not hide reads 100%: every remaining criterion
+    // passes. The repository still reads 20%, and that is the number the floor
+    // is measured against.
+    const notBaselined = summaryOf({ pass: 1, total: 1, coverage: 100 });
+    const overall = summaryOf({ pass: 1, total: 5, fail: 4, coverage: 20 });
+    const result = evaluateGates(
+      notBaselined,
+      { failOn: ['fail'], minPass: null, minCoverage: 80 },
+      overall,
+    );
+    expect(result.passed).toBe(false);
+    expect(result.violations).toEqual([
+      '20% of checkable criteria are linked, --min-coverage requires at least 80%',
+    ]);
   });
 
   it('reports both violations when both gates are broken', () => {
     const result = evaluateGates(summaryOf({ pass: 1, fail: 2 }), {
       failOn: ['fail'],
       minPass: 5,
+      minCoverage: null,
     });
     expect(result.passed).toBe(false);
     expect(result.violations).toHaveLength(2);

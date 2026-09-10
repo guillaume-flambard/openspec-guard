@@ -202,9 +202,26 @@ Gates are opt-in.
 ```bash
 openspec-guard check --fail-on fail,uncertain
 openspec-guard check --min-pass 40
+openspec-guard check --min-coverage 80
 ```
 
-Both gates apply together, and both violations are reported when both break.
+Every gate applies, and every violation is reported.
+
+`--min-coverage` is the percentage of criteria linked to a test. Scenarios
+declared non-testable leave the denominator, because a decision that was made
+and reasoned is not a gap.
+
+It differs from the other two on purpose: `--fail-on` and `--min-pass` read what
+a baseline does not hold back, because they are about what is new, while
+`--min-coverage` reads the whole repository. **Freezing debt must never make the
+number go up**, or the baseline becomes a way to report something that is not
+true. So one gate stops the bleeding and the other tracks the healing, and they
+are meant to be used together:
+
+```bash
+openspec-guard check --baseline .openspec-guard-baseline.json \
+  --fail-on fail --min-coverage 40
+```
 
 ## In CI
 
@@ -346,6 +363,7 @@ Baseline
 Gates
   --fail-on <list>         Verdicts that must not appear
   --min-pass <n>           Minimum number of passing criteria
+  --min-coverage <n>       Minimum percentage of criteria linked to a test
 ```
 
 `--tests` matters in a repository where `*.spec.ts` also means Playwright: a
@@ -388,10 +406,11 @@ pnpm spec:check
 ```
 
 ```
-188 criteria: 187 pass (187 by selector, 0 by similarity), 0 uncertain, 0 fail, 1 skip
+206 criteria: 205 pass (205 by selector, 0 by similarity), 0 uncertain, 0 fail, 1 skip
+100% of 205 checkable criteria are linked to a test
 ```
 
-Twelve capabilities, 188 scenarios, one of them declared non-testable with its
+Twelve capabilities, 206 scenarios, one of them declared non-testable with its
 reason: how many annotations GitHub renders per step is GitHub's decision, and
 nothing here can observe it. A scenario added to those specs without a test
 fails the build.

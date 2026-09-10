@@ -127,11 +127,16 @@ export function summaryFor(report: Report): string {
     `| skip | ${summary.skip} |`,
   ];
 
+  // The baselined row belongs to the table, so it goes in before anything that
+  // closes it.
   if (summary.baselined > 0) {
     lines.push(`| frozen by the baseline | ${summary.baselined} |`);
   }
 
   lines.push(
+    '',
+    `**${summary.coverage}%** of the ${summary.total - summary.skip} checkable criteria are ` +
+      'linked to a test.',
     '',
     summary.pass > 0
       ? `Of the ${summary.pass} passing, ${summary.passBySelector} are linked by an explicit ` +
@@ -171,6 +176,7 @@ export interface Outputs {
   fail: string;
   skip: string;
   baselined: string;
+  coverage: string;
   'gate-passed': string;
 }
 
@@ -183,6 +189,7 @@ export function outputsFor(report: Report): Outputs {
     fail: String(summary.fail),
     skip: String(summary.skip),
     baselined: String(summary.baselined),
+    coverage: String(summary.coverage),
     'gate-passed': String(report.gates.passed),
   };
 }

@@ -130,6 +130,7 @@ export function readConfig(env: Env): ActionConfig {
       updateBaseline: readBoolean(env, 'update-baseline', false),
       failOn: failOn as Verdict[],
       minPass: readNumber(env, 'min-pass', 0, Number.MAX_SAFE_INTEGER) ?? null,
+      minCoverage: readNumber(env, 'min-coverage', 0, 100) ?? null,
       passThreshold: readNumber(env, 'pass-threshold', 0, 1),
       uncertainThreshold: readNumber(env, 'uncertain-threshold', 0, 1),
       minSharedTerms: readNumber(env, 'min-shared-terms', 0, 100),

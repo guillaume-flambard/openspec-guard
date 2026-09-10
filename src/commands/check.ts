@@ -45,6 +45,8 @@ export interface CheckInput extends DiscoveryOptions {
   passThreshold?: number | undefined;
   uncertainThreshold?: number | undefined;
   minSharedTerms?: number | undefined;
+  /** Minimum percentage of checkable criteria linked to a test. */
+  minCoverage?: number | null | undefined;
   /** Path to a baseline, relative to cwd. */
   baseline?: string | undefined;
   /** Rewrite the baseline from this run instead of checking against it. */
@@ -171,12 +173,15 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
   const summary = summarize(outcomes);
   const failOn = input.failOn ?? [];
   const minPass = input.minPass ?? null;
-  // Gates see only what the baseline does not already hold back. That is the
-  // whole point: freeze the debt, fail on what is new.
-  const gates = evaluateGates(summarize(outcomes.filter((outcome) => outcome.baselined !== true)), {
-    failOn,
-    minPass,
-  });
+  const minCoverage = input.minCoverage ?? null;
+  // --fail-on and --min-pass see only what the baseline does not already hold
+  // back: freeze the debt, fail on what is new. --min-coverage reads the whole
+  // repository instead, so that freezing debt can never make the number go up.
+  const gates = evaluateGates(
+    summarize(outcomes.filter((outcome) => outcome.baselined !== true)),
+    { failOn, minPass, minCoverage },
+    summary,
+  );
 
   const report: Report = {
     schemaVersion: SCHEMA_VERSION,
@@ -195,6 +200,7 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
       baseline: baselinePath ?? null,
       failOn,
       minPass,
+      minCoverage,
       heuristic: options.heuristic,
       includeChanges: input.includeChanges === true,
       passThreshold: options.passThreshold,

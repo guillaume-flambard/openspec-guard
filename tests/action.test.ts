@@ -70,6 +70,11 @@ describe('readConfig', () => {
     });
   });
 
+  it('reads the coverage floor', () => {
+    const config = readConfig({ GITHUB_WORKSPACE: '/work', 'INPUT_MIN-COVERAGE': '80' });
+    expect(config.check.minCoverage).toBe(80);
+  });
+
   it('splits a list input on commas and newlines', () => {
     const config = readConfig({
       GITHUB_WORKSPACE: '/work',
@@ -170,6 +175,11 @@ describe('summaryFor', () => {
     expect(summary).toContain('1 are linked by an explicit selector');
   });
 
+  it('states the coverage percentage', async () => {
+    const { report } = await runCheck({ cwd: fixture('pass-explicit') });
+    expect(summaryFor(report)).toContain('**100%** of the 1 checkable criteria');
+  });
+
   it('lists the gate violations when there are any', async () => {
     const { report } = await runCheck({ cwd: fixture('fail-no-candidate'), failOn: ['fail'] });
     expect(summaryFor(report)).toContain('### Gate');
@@ -190,6 +200,7 @@ describe('renderOutputs', () => {
       fail: '3',
       skip: '1',
       baselined: '0',
+      coverage: '20',
       'gate-passed': 'false',
     });
     expect(rendered).toContain('total<<__OPENSPEC_GUARD__\n5\n__OPENSPEC_GUARD__');

@@ -70,6 +70,9 @@ Gates
   --fail-on <list>         Comma-separated verdicts that must not appear,
                            among pass, uncertain, fail, skip
   --min-pass <n>           Minimum number of passing criteria
+  --min-coverage <n>       Minimum percentage of checkable criteria linked to a
+                           test. Non-testable scenarios are out of the
+                           denominator; a baseline never raises this number
 
 Exit codes
   0  success
@@ -171,6 +174,7 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       'max-rows': { type: 'string' },
       'fail-on': { type: 'string' },
       'min-pass': { type: 'string' },
+      'min-coverage': { type: 'string' },
       'pass-threshold': { type: 'string' },
       'uncertain-threshold': { type: 'string' },
       'min-shared-terms': { type: 'string' },
@@ -234,6 +238,10 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       values['min-pass'] === undefined
         ? null
         : parseNumber(values['min-pass'], '--min-pass', 0, Number.MAX_SAFE_INTEGER),
+    minCoverage:
+      values['min-coverage'] === undefined
+        ? null
+        : parseNumber(values['min-coverage'], '--min-coverage', 0, 100),
     passThreshold,
     uncertainThreshold,
     minSharedTerms:

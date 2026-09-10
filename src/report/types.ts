@@ -66,6 +66,7 @@ export interface ReportOptions {
   baseline: string | null;
   failOn: Verdict[];
   minPass: number | null;
+  minCoverage: number | null;
   heuristic: boolean;
   includeChanges: boolean;
   passThreshold: number;

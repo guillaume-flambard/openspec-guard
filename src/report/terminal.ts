@@ -120,9 +120,11 @@ function summaryLine(report: Report): string {
       : '';
   const frozen =
     summary.baselined > 0 ? `, ${summary.baselined} of them frozen by the baseline` : '';
+  const checkable = summary.total - summary.skip;
   return (
     `${summary.total} criteria: ${summary.pass} pass${split}, ` +
-    `${summary.uncertain} uncertain, ${summary.fail} fail, ${summary.skip} skip${frozen}`
+    `${summary.uncertain} uncertain, ${summary.fail} fail, ${summary.skip} skip${frozen}` +
+    `\n${summary.coverage}% of ${checkable} checkable criteria are linked to a test`
   );
 }
 

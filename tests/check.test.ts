@@ -126,6 +126,18 @@ describe('runCheck, gates', () => {
     expect(report.gates.violations).toHaveLength(2);
   });
 
+  it('fails the gate on a coverage floor', async () => {
+    expect((await check('pass-explicit', { minCoverage: 100 })).exitCode).toBe(EXIT_OK);
+    expect((await check('fail-no-candidate', { minCoverage: 50 })).exitCode).toBe(EXIT_GATE);
+  });
+
+  it('leaves a non-testable scenario out of the coverage denominator', async () => {
+    const { report, exitCode } = await check('skip-non-testable', { minCoverage: 100 });
+    // One criterion, declared non-testable: nothing is left to cover.
+    expect(report.summary.coverage).toBe(100);
+    expect(exitCode).toBe(EXIT_OK);
+  });
+
   it('treats uncertain as passing unless it is named in --fail-on', async () => {
     expect((await check('uncertain')).exitCode).toBe(EXIT_OK);
     expect((await check('uncertain', { failOn: ['fail', 'uncertain'] })).exitCode).toBe(EXIT_GATE);

@@ -48,6 +48,12 @@ inputs:
   min-pass:
     description: Minimum number of passing criteria.
     required: false
+  min-coverage:
+    description: >-
+      Minimum percentage of checkable criteria linked to a test. Scenarios
+      declared non-testable are out of the denominator, and a baseline never
+      raises this number.
+    required: false
   pass-threshold:
     description: Similarity needed to pass. Default 0.6.
     required: false
@@ -89,6 +95,8 @@ outputs:
     description: Criteria declared non-testable.
   baselined:
     description: Criteria frozen by the baseline.
+  coverage:
+    description: Percentage of checkable criteria linked to a test.
   gate-passed:
     description: 'true when no gate was violated.'
 
