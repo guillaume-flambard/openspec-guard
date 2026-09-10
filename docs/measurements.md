@@ -66,6 +66,27 @@ The 16 `uncertain` still contain real noise (`"Requesting a link"` against
 `"does not link a node to itself"`, one shared word), which is why the middle
 band is a verdict of its own rather than a pass.
 
+## The third case: selectors, on a repository that had no tests at all
+
+A Next.js application with one pure module and zero tests was given, in one
+sitting, a Vitest suite and an OpenSpec capability describing the same module,
+with every scenario carrying an explicit selector.
+
+```
+11 criteria: 10 pass (10 by selector, 0 by similarity), 0 uncertain, 0 fail, 1 skip
+```
+
+`--fail-on fail,uncertain` exits `0`. The one skip is a scenario about editorial
+tone, declared `non-testable` with its reason, which is what keeps it auditable
+rather than merely absent.
+
+Note the second number: zero passes by similarity, on a repository where specs
+and tests were written together, in the same sitting, by the same person. The
+scenario titles describe behaviour ("Falls back to the email local part") and
+the test titles describe the function under test ("falls back to the local part
+of the email"). Even that is not reliably close enough for a 0.6 Jaccard. The
+selector is not a fallback for messy repositories; it is the mechanism.
+
 ## Why the defaults are what they are
 
 The `--min-shared-terms 2` floor is doing real work: without it, every
