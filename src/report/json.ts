@@ -9,7 +9,7 @@ import type { Report } from './types.js';
  * makes "two identical runs produce identical bytes" true rather than likely.
  *
  * The document goes to stdout and nowhere else. Every human-facing line,
- * warnings included, goes to stderr, so `specguard check --format json > out.json`
+ * warnings included, goes to stderr, so `openopenspec-guard check --format json > out.json`
  * writes exactly the document.
  */
 export function renderJson(report: Report): string {

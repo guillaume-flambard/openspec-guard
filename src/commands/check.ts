@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { buildCriteria } from '../criteria.js';
 import { discover, type DiscoveryOptions } from '../discovery.js';
-import { EXIT_GATE, EXIT_INPUT, EXIT_OK, SpecGuardError } from '../errors.js';
+import { EXIT_GATE, EXIT_INPUT, EXIT_OK, OpenSpecGuardError } from '../errors.js';
 import {
   buildTestIndex,
   DEFAULT_MIN_SHARED_TERMS,
@@ -131,7 +131,7 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
 
   const report: Report = {
     schemaVersion: SCHEMA_VERSION,
-    tool: { name: 'specguard', version: VERSION },
+    tool: { name: 'openspec-guard', version: VERSION },
     input: {
       specRoot: discovery.relative(discovery.specRoot),
       codeRoot: discovery.relative(discovery.codeRoot) || '.',
@@ -174,9 +174,9 @@ export async function runCheck(input: CheckInput): Promise<CheckOutcome> {
 /** Carries every annotation error so the CLI can print them all at once. */
 export class AnnotationErrors extends Error {
   readonly exitCode = EXIT_INPUT;
-  readonly errors: SpecGuardError[];
+  readonly errors: OpenSpecGuardError[];
 
-  constructor(errors: SpecGuardError[]) {
+  constructor(errors: OpenSpecGuardError[]) {
     super(`${errors.length} annotation error(s)`);
     this.name = 'AnnotationErrors';
     this.errors = errors;

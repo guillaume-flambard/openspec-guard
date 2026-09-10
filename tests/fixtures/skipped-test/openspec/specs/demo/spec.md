@@ -7,7 +7,7 @@
 The system SHALL reject an invalid email address.
 
 #### Scenario: Rejects an invalid email
-<!-- specguard:test="rejects an invalid email address" -->
+<!-- openspec-guard:test="rejects an invalid email address" -->
 
 - **WHEN** a visitor submits a malformed address
 - **THEN** the system refuses it

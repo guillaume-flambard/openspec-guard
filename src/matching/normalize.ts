@@ -7,7 +7,7 @@
  * `language`. A French scenario title and an English test title share tokens
  * only by lexical accident, mostly on borrowed words and code identifiers.
  *
- * That is why the explicit `specguard:test` selector is the primary mechanism
+ * That is why the explicit `openspec-guard:test` selector is the primary mechanism
  * and similarity is a convenience for single-language repositories.
  *
  * No stemming either. A French stemmer is a real dependency, and it would not

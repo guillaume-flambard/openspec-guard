@@ -1,4 +1,4 @@
-# SpecGuard
+# OpenSpec Guard
 
 Answers one question about a repository, deterministically: **which OpenSpec
 scenarios are covered by a test?**
@@ -8,7 +8,7 @@ the tests, never imports your code, and never calls an LLM. The same input
 always produces the same bytes.
 
 ```bash
-npx @zoanlogia/spec-guard check
+npx openopenspec-guard check
 ```
 
 ## Link a scenario to a test
@@ -19,7 +19,7 @@ scenario heading, as an HTML comment:
 ```md
 #### Scenario: Sign up with a valid email
 
-<!-- specguard:test="creates a user with a valid email" -->
+<!-- openspec-guard:test="creates a user with a valid email" -->
 
 - **WHEN** a visitor submits a valid email
 - **THEN** the system creates the user
@@ -29,7 +29,7 @@ The selector is compared, exactly, against the test's leaf title and against
 its full name. Use the full name when a title occurs more than once:
 
 ```md
-<!-- specguard:test="signup > empty field" -->
+<!-- openspec-guard:test="signup > empty field" -->
 ```
 
 For a scenario that no automated test can cover, say so and say why:
@@ -37,20 +37,20 @@ For a scenario that no automated test can cover, say so and say why:
 ```md
 #### Scenario: Manual compliance sign-off
 
-<!-- specguard:non-testable reason="Requires a human legal assessment" -->
+<!-- openspec-guard:non-testable reason="Requires a human legal assessment" -->
 ```
 
 The two directives are mutually exclusive, and `non-testable` requires a
 non-empty reason. That reason is what keeps a skipped criterion auditable.
 
-> These annotations are a **SpecGuard convention, not OpenSpec syntax**. They
+> These annotations are a **OpenSpec Guard convention, not OpenSpec syntax**. They
 > are HTML comments on purpose: the official OpenSpec parser treats every `####`
-> heading as a scenario, so a `#### SpecGuard metadata` block would silently
+> heading as a scenario, so a `#### OpenSpec Guard metadata` block would silently
 > become a bogus scenario. A comment cannot.
 
 ## What similarity can and cannot do
 
-When a scenario has no selector, SpecGuard falls back to a Jaccard score over
+When a scenario has no selector, OpenSpec Guard falls back to a Jaccard score over
 significant words. Be clear about what that is:
 
 **It compares words. It does not translate them.** French and English stopwords
@@ -89,16 +89,16 @@ Four verdicts, and a reason that says what to do about it.
 | `skip`      | `non-testable`         | Declared not testable, with a reason                |
 
 A skipped test never counts as coverage. `it.skip` is exactly the state
-SpecGuard exists to reveal, so it produces `fail`, never `skip`.
+OpenSpec Guard exists to reveal, so it produces `fail`, never `skip`.
 
 ## Exit codes
 
-| Code | Meaning                                              |
-| ---- | ---------------------------------------------------- |
-| `0`  | Success                                              |
-| `1`  | A gate was violated, and nothing else                |
-| `2`  | The input or an option is at fault                   |
-| `3`  | An internal error: a SpecGuard bug, please report it |
+| Code | Meaning                                                   |
+| ---- | --------------------------------------------------------- |
+| `0`  | Success                                                   |
+| `1`  | A gate was violated, and nothing else                     |
+| `2`  | The input or an option is at fault                        |
+| `3`  | An internal error: a OpenSpec Guard bug, please report it |
 
 `2` and `3` are kept apart on purpose. A `2` is your input; a `3` is our bug.
 Collapsing them turns every regression of this tool into a hunt for an innocent
@@ -108,8 +108,8 @@ By default a run exits `0` even with failures: it reports, it does not judge.
 Gates are opt-in.
 
 ```bash
-spec-guard check --fail-on fail,uncertain
-spec-guard check --min-pass 40
+openspec-guard check --fail-on fail,uncertain
+openspec-guard check --min-pass 40
 ```
 
 Both gates apply together, and both violations are reported when both break.
@@ -118,7 +118,7 @@ Both gates apply together, and both violations are reported when both break.
 
 ```yaml
 - name: Spec coverage
-  run: npx @zoanlogia/spec-guard check --fail-on fail,uncertain
+  run: npx openopenspec-guard check --fail-on fail,uncertain
 ```
 
 Start without a gate, read the report, add selectors, then turn the gate on.
@@ -127,7 +127,7 @@ Turning it on first only teaches the team to pass `--allow-empty`.
 ## Options
 
 ```
-spec-guard check [options]
+openspec-guard check [options]
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)
@@ -164,7 +164,7 @@ default run collects those titles too, and they pollute the index.
 human-facing line goes to stderr. So this is exactly the document:
 
 ```bash
-spec-guard check --format json > coverage.json
+openspec-guard check --format json > coverage.json
 ```
 
 Its guarantees are part of the contract, not an implementation detail:
@@ -192,13 +192,13 @@ file, per-package scoping in a monorepo, `.gitignore` awareness, stemming or
 translation, expanding `.each` tables, watch mode, SARIF, and any reading of a
 test **body**.
 
-SpecGuard matches titles. It never reads an assertion, so it cannot tell you
+OpenSpec Guard matches titles. It never reads an assertion, so it cannot tell you
 whether a test is any good, only whether one exists.
 
 ## Programmatic use
 
 ```ts
-import { runCheck, renderJson } from '@zoanlogia/spec-guard';
+import { runCheck, renderJson } from 'openspec-guard';
 
 const { report, exitCode } = await runCheck({
   cwd: process.env.GITHUB_WORKSPACE ?? process.cwd(),
@@ -215,17 +215,13 @@ Node 20.11 or later.
 ## A note on the name
 
 There is an unrelated package called `specguard`, one word, published on npm in
-February 2026, which also ships a binary named `specguard`. This one is
-`spec-guard`, hyphenated, and so is its binary, so the two can sit side by side.
-
-npm rejects the unscoped name `spec-guard` as too similar to `specguard`, which
-is why this package is scoped. Nothing is published under `@memo-labs`: that
-scope belongs to an unrelated account, whatever an older version of this README
-may have said.
+February 2026. This one is `openspec-guard`, named after the spec format it
+reads and after the `openspec-*` convention the rest of that ecosystem already
+uses. Different package, different binary, no overlap.
 
 ```bash
-npx @zoanlogia/spec-guard check       # no install
-pnpm add -D @zoanlogia/spec-guard     # then: pnpm spec-guard check
+npx openspec-guard check      # no install
+pnpm add -D openspec-guard    # then: pnpm openspec-guard check
 ```
 
 ## License

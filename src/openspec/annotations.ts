@@ -2,19 +2,19 @@ import { type ErrorCode } from '../errors.js';
 import type { Annotation } from '../types.js';
 
 /**
- * SpecGuard annotations.
+ * OpenSpec Guard annotations.
  *
  * These are HTML comments placed directly under a scenario heading. They are a
- * documented SpecGuard convention and NEVER OpenSpec syntax. They are comments
+ * documented OpenSpec Guard convention and NEVER OpenSpec syntax. They are comments
  * on purpose: the official OpenSpec parser treats every `####` heading as a
- * scenario, so a `#### SpecGuard metadata` block would silently become a bogus
+ * scenario, so a `#### OpenSpec Guard metadata` block would silently become a bogus
  * scenario.
  *
  *   #### Scenario: Sign up with a valid email
- *   <!-- specguard:test="creates a user with a valid email" -->
+ *   <!-- openspec-guard:test="creates a user with a valid email" -->
  *
  *   #### Scenario: Manual compliance sign-off
- *   <!-- specguard:non-testable reason="Requires a human legal assessment" -->
+ *   <!-- openspec-guard:non-testable reason="Requires a human legal assessment" -->
  *
  * The grammar is deliberately rigid. A typo that makes a selector invisible is
  * the worst possible outcome, so anything unrecognized is an error rather than
@@ -40,7 +40,7 @@ export interface AnnotationParseResult {
 /** Any HTML comment on a line of its own. */
 const HTML_COMMENT = /^\s*<!--([\s\S]*?)-->\s*$/;
 /** Our namespace inside such a comment. */
-const SPECGUARD_PREFIX = /^\s*specguard:\s*/;
+const PREFIX = /^\s*openspec-guard:\s*/;
 /** `test="..."`, double quotes only, `\"` supported. */
 const TEST_DIRECTIVE = /^test\s*=\s*"((?:[^"\\]|\\.)*)"$/;
 /** `non-testable reason="..."`, in that order. */
@@ -60,7 +60,7 @@ function unescape(raw: string): string {
  * `bodyLines` is the whole scenario body with line numbers. Directives are only
  * recognized in the contiguous block that follows the heading: blank lines are
  * tolerated before them, but the first line of real content (a bullet, prose)
- * closes the block. A `specguard:` directive found after that point is an
+ * closes the block. A `openspec-guard:` directive found after that point is an
  * error, not a silent no-op, for the same reason the grammar is rigid.
  */
 export function parseAnnotations(bodyLines: readonly AnnotationLine[]): AnnotationParseResult {
@@ -78,20 +78,20 @@ export function parseAnnotations(bodyLines: readonly AnnotationLine[]): Annotati
     }
 
     const inner = comment[1] ?? '';
-    if (!SPECGUARD_PREFIX.test(inner)) continue; // Foreign HTML comment: not ours.
+    if (!PREFIX.test(inner)) continue; // Foreign HTML comment: not ours.
 
     if (blockClosed) {
       errors.push({
         code: 'E_ANNOTATION_MISPLACED',
         message:
-          'specguard directive found after the start of the scenario body. ' +
+          'openspec-guard directive found after the start of the scenario body. ' +
           'Directives must sit directly under the scenario heading.',
         line,
       });
       continue;
     }
 
-    const directive = inner.replace(SPECGUARD_PREFIX, '').trim();
+    const directive = inner.replace(PREFIX, '').trim();
     const annotation = parseDirective(directive, line, errors);
     if (annotation) found.push(annotation);
   }
@@ -109,7 +109,7 @@ function parseDirective(
   if (verb === undefined || !KNOWN_VERBS.has(verb)) {
     errors.push({
       code: 'E_ANNOTATION_UNKNOWN',
-      message: `Unknown specguard directive ${JSON.stringify(
+      message: `Unknown openspec-guard directive ${JSON.stringify(
         verb ?? directive,
       )}. Known directives: test, non-testable.`,
       line,
@@ -123,7 +123,7 @@ function parseDirective(
       errors.push({
         code: 'E_ANNOTATION_SYNTAX',
         message:
-          'Malformed test directive. Expected <!-- specguard:test="exact test title" --> ' +
+          'Malformed test directive. Expected <!-- openspec-guard:test="exact test title" --> ' +
           'with double quotes.',
         line,
       });
@@ -147,7 +147,7 @@ function parseDirective(
       code: 'E_ANNOTATION_SYNTAX',
       message:
         'Malformed non-testable directive. Expected ' +
-        '<!-- specguard:non-testable reason="why" --> with double quotes.',
+        '<!-- openspec-guard:non-testable reason="why" --> with double quotes.',
       line,
     });
     return null;
@@ -175,14 +175,14 @@ function reconcile(found: readonly Annotation[], errors: AnnotationError[]): Ann
     if (extra.kind === first.kind) {
       errors.push({
         code: 'E_ANNOTATION_DUPLICATE',
-        message: `Duplicate specguard:${extra.kind} directive on the same scenario.`,
+        message: `Duplicate openspec-guard:${extra.kind} directive on the same scenario.`,
         line: extra.line,
       });
     } else {
       errors.push({
         code: 'E_ANNOTATION_CONFLICT',
         message:
-          'specguard:test and specguard:non-testable are mutually exclusive. ' +
+          'openspec-guard:test and openspec-guard:non-testable are mutually exclusive. ' +
           'A scenario is either linked to a test or declared not testable.',
         line: extra.line,
       });

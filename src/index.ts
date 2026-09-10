@@ -17,8 +17,8 @@ export {
   EXIT_INPUT,
   EXIT_INTERNAL,
   EXIT_OK,
-  isSpecGuardError,
-  SpecGuardError,
+  isOpenSpecGuardError,
+  OpenSpecGuardError,
   type ErrorCode,
 } from './errors.js';
 export { renderJson } from './report/json.js';

@@ -20,9 +20,9 @@ function id(
 }
 
 describe('normalizeScenarioText', () => {
-  it('strips specguard comments from the canonical text', () => {
+  it('strips openspec-guard comments from the canonical text', () => {
     const withAnnotation = normalizeScenarioText(HEADING, [
-      '<!-- specguard:test="shows the login page" -->',
+      '<!-- openspec-guard:test="shows the login page" -->',
       ...BODY,
     ]);
     expect(withAnnotation).toBe(normalizeScenarioText(HEADING, BODY));
@@ -57,8 +57,11 @@ describe('criterionId', () => {
 
   it('does not move when an annotation is added then removed', () => {
     const base = id(HEADING, BODY);
-    const annotated = id(HEADING, ['<!-- specguard:test="a" -->', ...BODY]);
-    const nonTestable = id(HEADING, ['<!-- specguard:non-testable reason="legal" -->', ...BODY]);
+    const annotated = id(HEADING, ['<!-- openspec-guard:test="a" -->', ...BODY]);
+    const nonTestable = id(HEADING, [
+      '<!-- openspec-guard:non-testable reason="legal" -->',
+      ...BODY,
+    ]);
     expect(annotated).toBe(base);
     expect(nonTestable).toBe(base);
   });

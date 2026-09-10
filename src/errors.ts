@@ -40,14 +40,14 @@ export interface ErrorLocation {
   line: number;
 }
 
-export class SpecGuardError extends Error {
+export class OpenSpecGuardError extends Error {
   readonly code: ErrorCode;
   readonly exitCode: number;
   readonly location: ErrorLocation | null;
 
   constructor(code: ErrorCode, message: string, location: ErrorLocation | null = null) {
     super(message);
-    this.name = 'SpecGuardError';
+    this.name = 'OpenSpecGuardError';
     this.code = code;
     this.exitCode = EXIT_INPUT;
     this.location = location;
@@ -60,6 +60,6 @@ export class SpecGuardError extends Error {
   }
 }
 
-export function isSpecGuardError(value: unknown): value is SpecGuardError {
-  return value instanceof SpecGuardError;
+export function isOpenSpecGuardError(value: unknown): value is OpenSpecGuardError {
+  return value instanceof OpenSpecGuardError;
 }

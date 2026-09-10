@@ -32,7 +32,7 @@ let before: Report;
 let after: Report;
 
 beforeAll(async () => {
-  workspace = await mkdtemp(path.join(tmpdir(), 'specguard-annotate-'));
+  workspace = await mkdtemp(path.join(tmpdir(), 'openspec-guard-annotate-'));
   await cp(CORPUS, workspace, { recursive: true });
 
   before = (await runCheck({ cwd: workspace })).report;
@@ -44,7 +44,7 @@ beforeAll(async () => {
     const [heading, ...rest] = anchor.split('\n\n');
     spec = spec.replace(
       anchor,
-      `${heading as string}\n<!-- specguard:test="${selector}" -->\n\n${rest.join('\n\n')}`,
+      `${heading as string}\n<!-- openspec-guard:test="${selector}" -->\n\n${rest.join('\n\n')}`,
     );
   }
   await writeFile(specPath, spec, 'utf8');

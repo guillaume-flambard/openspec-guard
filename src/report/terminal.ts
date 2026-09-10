@@ -89,7 +89,7 @@ function rowsOf(result: CriterionResult): string[] {
 function headerOf(report: Report): string[] {
   const { input } = report;
   return [
-    `specguard ${report.tool.version}`,
+    `openspec-guard ${report.tool.version}`,
     `  specs   ${input.specRoot}  (${input.specFileCount} files, ${report.summary.total} criteria)`,
     `  code    ${input.codeRoot}  (${input.testFileCount} test files, ` +
       `${input.testTitleCount} titles)`,
@@ -133,7 +133,7 @@ function languageNotice(report: Report): string[] {
     'No criterion was linked by similarity on this repository.',
     'Similarity compares words, it does not translate them: scenarios written in one',
     'language and test titles written in another cannot meet. To link a scenario to a',
-    'test, add <!-- specguard:test="exact test title" --> under its heading.',
+    'test, add <!-- openspec-guard:test="exact test title" --> under its heading.',
   ];
 }
 

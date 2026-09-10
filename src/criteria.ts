@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { SpecGuardError } from './errors.js';
+import { OpenSpecGuardError } from './errors.js';
 import { parseAnnotations } from './openspec/annotations.js';
 import type { ParsedSpec } from './openspec/parse.js';
 import type { Criterion } from './types.js';
@@ -14,12 +14,12 @@ import type { Criterion } from './types.js';
  *    not even within a single file: real corpora contain several
  *    `Scenario: Anonymous visitor`. The path alone cannot tell two criteria
  *    apart.
- * 2. `specguard:` comments are stripped from the normalized text. Otherwise
+ * 2. `openspec-guard:` comments are stripped from the normalized text. Otherwise
  *    adding a selector to a scenario would change its id, and any future
  *    baseline would be invalidated by the very first selector someone writes.
  */
 
-const SPECGUARD_COMMENT = /^\s*<!--\s*specguard:[\s\S]*?-->\s*$/;
+const SPECGUARD_COMMENT = /^\s*<!--\s*openspec-guard:[\s\S]*?-->\s*$/;
 
 /**
  * Canonical text of a scenario: heading then body, annotations stripped,
@@ -75,7 +75,7 @@ export function disambiguateIds(ids: readonly string[]): string[] {
 export interface BuildCriteriaResult {
   criteria: Criterion[];
   /** Annotation problems. Any of these stops the run with exit code 2. */
-  errors: SpecGuardError[];
+  errors: OpenSpecGuardError[];
   /** Scenarios under a `## REMOVED Requirements` section, counted not checked. */
   removedScenarioCount: number;
 }
@@ -89,7 +89,7 @@ export interface BuildCriteriaResult {
 export function buildCriteria(specs: readonly ParsedSpec[]): BuildCriteriaResult {
   const draft: Omit<Criterion, 'id'>[] = [];
   const rawIds: string[] = [];
-  const errors: SpecGuardError[] = [];
+  const errors: OpenSpecGuardError[] = [];
   let removedScenarioCount = 0;
 
   for (const spec of specs) {
@@ -103,7 +103,10 @@ export function buildCriteria(specs: readonly ParsedSpec[]): BuildCriteriaResult
         const parsed = parseAnnotations(scenario.annotationLines);
         for (const error of parsed.errors) {
           errors.push(
-            new SpecGuardError(error.code, error.message, { file: spec.file, line: error.line }),
+            new OpenSpecGuardError(error.code, error.message, {
+              file: spec.file,
+              line: error.line,
+            }),
           );
         }
 

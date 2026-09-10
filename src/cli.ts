@@ -3,7 +3,13 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { AnnotationErrors, runCheck, type CheckInput } from './commands/check.js';
-import { EXIT_INPUT, EXIT_INTERNAL, EXIT_OK, isSpecGuardError, SpecGuardError } from './errors.js';
+import {
+  EXIT_INPUT,
+  EXIT_INTERNAL,
+  EXIT_OK,
+  isOpenSpecGuardError,
+  OpenSpecGuardError,
+} from './errors.js';
 import { renderJson } from './report/json.js';
 import { DEFAULT_TERMINAL_OPTIONS, renderTerminal } from './report/terminal.js';
 import type { Runner } from './tests/detect.js';
@@ -17,13 +23,13 @@ import { VERSION } from './version.js';
  * unknown options raise instead of being silently ignored.
  */
 
-const HELP = `spec-guard ${VERSION}
+const HELP = `openspec-guard ${VERSION}
 
   Check which OpenSpec scenarios are covered by a Vitest or Jest test.
   Reads specs and test titles. Never runs the tests. Never calls an LLM.
 
 Usage
-  spec-guard check [options]
+  openspec-guard check [options]
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)
@@ -57,11 +63,11 @@ Exit codes
   2  the input or an option is at fault
   3  an internal error: our bug
 
-Linking a scenario to a test is an explicit SpecGuard annotation, never
+Linking a scenario to a test is an explicit OpenSpec Guard annotation, never
 OpenSpec syntax. Put it directly under the scenario heading:
 
   #### Scenario: Sign up with a valid email
-  <!-- specguard:test="creates a user with a valid email" -->
+  <!-- openspec-guard:test="creates a user with a valid email" -->
 
 Similarity is a convenience for repositories whose specs and tests are written
 in the same language. It compares words; it does not translate them.
@@ -71,8 +77,8 @@ const VERDICTS = new Set<Verdict>(['pass', 'uncertain', 'fail', 'skip']);
 const RUNNERS = new Set<Runner>(['vitest', 'jest']);
 const FORMATS = new Set(['terminal', 'json']);
 
-function optionError(message: string): SpecGuardError {
-  return new SpecGuardError('E_OPTION', message);
+function optionError(message: string): OpenSpecGuardError {
+  return new OpenSpecGuardError('E_OPTION', message);
 }
 
 function parseNumber(raw: string | undefined, name: string, min: number, max: number): number {
@@ -259,13 +265,13 @@ export async function main(argv: readonly string[]): Promise<void> {
       process.exitCode = error.exitCode;
       return;
     }
-    if (isSpecGuardError(error)) {
+    if (isOpenSpecGuardError(error)) {
       process.stderr.write(`${error.format()}\n`);
       process.exitCode = error.exitCode;
       return;
     }
     process.stderr.write(
-      `Internal error. This is a SpecGuard bug, please report it.\n${
+      `Internal error. This is a OpenSpec Guard bug, please report it.\n${
         error instanceof Error ? (error.stack ?? error.message) : String(error)
       }\n`,
     );
