@@ -33,6 +33,9 @@ export type ErrorCode =
   // Baseline
   | 'E_BASELINE_NOT_FOUND'
   | 'E_BASELINE_INVALID'
+  // Link
+  | 'E_LINK_CONFLICT'
+  | 'E_LINK_EMPTY_SELECTOR'
   // Options
   | 'E_OPTION';
 

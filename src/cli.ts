@@ -3,6 +3,8 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { AnnotationErrors, runCheck, type CheckInput } from './commands/check.js';
+import { runLink } from './commands/link.js';
+import { createTerminalAsk } from './link/prompt.js';
 import {
   EXIT_INPUT,
   EXIT_INTERNAL,
@@ -29,7 +31,8 @@ const HELP = `openspec-guard ${VERSION}
   Reads specs and test titles. Never runs the tests. Never calls an LLM.
 
 Usage
-  openspec-guard check [options]
+  openspec-guard check [options]     report coverage, optionally gate on it
+  openspec-guard link  [options]     walk unlinked scenarios and write selectors
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)
@@ -51,6 +54,12 @@ Output
   --verbose                Print every row, including passes and skips
   --no-color               Never emit ANSI colour
   --max-rows <n>           Rows per group before truncation (default: 20)
+
+link
+  --limit <n>              Stop after n scenarios
+  --max-candidates <n>     Candidates offered per scenario (default: 5)
+  --min-score <n>          Hide candidates below this similarity (default: 0)
+  --dry-run                Decide everything, write nothing
 
 Baseline
   --baseline <file>        Freeze the criteria listed there: gates ignore them
@@ -118,7 +127,14 @@ function parseFailOn(raw: string | undefined): Verdict[] {
 }
 
 interface ParsedCommand {
+  command: 'check' | 'link';
   input: CheckInput;
+  link: {
+    limit: number | undefined;
+    maxCandidates: number | undefined;
+    minScore: number | undefined;
+    dryRun: boolean;
+  };
   format: 'terminal' | 'json';
   color: boolean;
   verbose: boolean;
@@ -152,6 +168,10 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
       'min-shared-terms': { type: 'string' },
       baseline: { type: 'string' },
       'update-baseline': { type: 'boolean' },
+      limit: { type: 'string' },
+      'max-candidates': { type: 'string' },
+      'min-score': { type: 'string' },
+      'dry-run': { type: 'boolean' },
     },
   });
 
@@ -160,11 +180,11 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
 
   const [command, ...rest] = positionals;
   if (command === undefined) return 'help';
-  if (command !== 'check') {
-    throw optionError(`Unknown command ${JSON.stringify(command)}. The only command is 'check'.`);
+  if (command !== 'check' && command !== 'link') {
+    throw optionError(`Unknown command ${JSON.stringify(command)}. Known commands: check, link.`);
   }
   if (rest.length > 0) {
-    throw optionError(`'check' takes no positional argument, got ${JSON.stringify(rest[0])}.`);
+    throw optionError(`'${command}' takes no positional argument, got ${JSON.stringify(rest[0])}.`);
   }
 
   if (values.runner !== undefined && !RUNNERS.has(values.runner as Runner)) {
@@ -216,7 +236,23 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
   };
 
   return {
+    command,
     input,
+    link: {
+      limit:
+        values.limit === undefined
+          ? undefined
+          : parseNumber(values.limit, '--limit', 1, Number.MAX_SAFE_INTEGER),
+      maxCandidates:
+        values['max-candidates'] === undefined
+          ? undefined
+          : parseNumber(values['max-candidates'], '--max-candidates', 1, 9),
+      minScore:
+        values['min-score'] === undefined
+          ? undefined
+          : parseNumber(values['min-score'], '--min-score', 0, 1),
+      dryRun: values['dry-run'] === true,
+    },
     format: format as 'terminal' | 'json',
     // NO_COLOR is honoured because a report that lands in a log file should not
     // be full of escape sequences.
@@ -230,6 +266,44 @@ function build(argv: readonly string[]): ParsedCommand | 'help' | 'version' {
         ? DEFAULT_TERMINAL_OPTIONS.maxRowsPerGroup
         : parseNumber(values['max-rows'], '--max-rows', 1, Number.MAX_SAFE_INTEGER),
   };
+}
+
+/**
+ * `link` is interactive by nature, so it writes its whole conversation to
+ * stderr and leaves stdout for the summary. A run that is not attached to a
+ * terminal is refused rather than silently answering its own questions.
+ */
+async function runLinkCommand(command: ParsedCommand): Promise<void> {
+  if (process.stdin.isTTY !== true) {
+    process.stderr.write(
+      'link needs a terminal: it asks a question per scenario. ' +
+        'Use check --update-baseline to freeze debt without answering anything.\n',
+    );
+    process.exitCode = EXIT_INPUT;
+    return;
+  }
+
+  const { ask, close } = createTerminalAsk(Number.MAX_SAFE_INTEGER);
+  try {
+    const result = await runLink({
+      ...command.input,
+      maxCandidates: command.link.maxCandidates,
+      limit: command.link.limit,
+      minScore: command.link.minScore,
+      dryRun: command.link.dryRun,
+      ask,
+    });
+
+    const written = result.dryRun ? 'would be written' : 'written';
+    process.stdout.write(
+      `${result.linked.length} linked, ${result.markedNonTestable.length} marked non-testable, ` +
+        `${result.skipped} skipped, ${result.remaining} left. ` +
+        `${result.dryRun ? 0 : result.filesWritten.length} file(s) ${written}.\n`,
+    );
+    process.exitCode = EXIT_OK;
+  } finally {
+    close();
+  }
 }
 
 export async function main(argv: readonly string[]): Promise<void> {
@@ -256,6 +330,11 @@ export async function main(argv: readonly string[]): Promise<void> {
   }
 
   try {
+    if (command.command === 'link') {
+      await runLinkCommand(command);
+      return;
+    }
+
     const { report, exitCode, baselineUpdate } = await runCheck(command.input);
 
     if (baselineUpdate) {

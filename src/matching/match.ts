@@ -74,9 +74,12 @@ function toCandidate(
   score: number,
   matchedOn: 'leaf' | 'fullName',
   terms: string[],
+  index: TestIndex,
 ): Candidate {
   return {
     fullName: title.fullName,
+    leaf: title.leaf,
+    leafAmbiguous: (index.byLeaf.get(title.leaf.trim())?.length ?? 0) > 1,
     file: title.file,
     line: title.line,
     score: roundScore(score),
@@ -111,7 +114,9 @@ export function matchCriterion(
 
   if (annotation?.kind === 'test') {
     const matches = bySelector(annotation.selector, index);
-    const candidates = matches.map((title) => toCandidate(title, 1, 'fullName', [])).sort(compare);
+    const candidates = matches
+      .map((title) => toCandidate(title, 1, 'fullName', [], index))
+      .sort(compare);
 
     const [best] = candidates;
     if (!best) return { reason: 'selector-unmatched', best: null, runnersUp: [] };
@@ -140,7 +145,7 @@ export function matchCriterion(
     const score = useLeaf ? leafScore : fullScore;
     if (score <= 0) continue;
     const terms = sharedTerms(scenario, useLeaf ? candidate.leaf.set : candidate.full.set);
-    scored.push(toCandidate(candidate.title, score, useLeaf ? 'leaf' : 'fullName', terms));
+    scored.push(toCandidate(candidate.title, score, useLeaf ? 'leaf' : 'fullName', terms, index));
   }
 
   scored.sort(compare);

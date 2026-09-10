@@ -84,7 +84,7 @@ describe('openspec-guard CLI', () => {
   it('exits 2 on an unknown command', async () => {
     const result = await cli('inspect');
     expect(result.code).toBe(2);
-    expect(result.stderr).toContain("only command is 'check'");
+    expect(result.stderr).toContain('Known commands: check, link.');
   });
 
   it('exits 2 on an out-of-range threshold', async () => {
@@ -138,6 +138,13 @@ describe('openspec-guard CLI', () => {
     } finally {
       await rm(workspace, { recursive: true, force: true });
     }
+  });
+
+  it('refuses to run link without a terminal, and says what to do instead', async () => {
+    const result = await cli('link', '--cwd', fixture('pass-heuristic'));
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('link needs a terminal');
+    expect(result.stderr).toContain('--update-baseline');
   });
 
   it('emits no colour when stdout is a pipe', async () => {

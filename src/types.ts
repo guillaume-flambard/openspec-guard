@@ -81,6 +81,10 @@ export type MatchReason =
 
 export interface Candidate {
   fullName: string;
+  /** Last segment of the path, the shortest selector that could name it. */
+  leaf: string;
+  /** True when another test shares this leaf, so only the full name is unique. */
+  leafAmbiguous: boolean;
   file: string;
   line: number;
   /** Jaccard score, rounded to 4 decimals. */

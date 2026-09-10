@@ -91,6 +91,47 @@ Four verdicts, and a reason that says what to do about it.
 A skipped test never counts as coverage. `it.skip` is exactly the state
 OpenSpec Guard exists to reveal, so it produces `fail`, never `skip`.
 
+## Paying the debt down: `link`
+
+A baseline freezes what is uncovered. `link` is how it gets uncovered no more.
+It walks every scenario with no directive, shows what it has, and writes your
+answer into the spec:
+
+```bash
+openspec-guard link
+```
+
+```
+[3/57] account/settings  Rejects a pen name that is too short
+
+  1) pen name > rejects a pen name shorter than two characters
+     lib/names.test.ts:13  score 0.71  shared: rejects, name, shorter
+
+  1-9 link to that test     /word search the test titles
+  t <title> link to a title you type
+  n <reason> not testable   s skip   q quit and write what is done
+```
+
+Press `1` and the annotation is written under the heading, with the shortest
+selector that still names exactly one test: the leaf title when it is unique,
+the full `describe > it` path when it is not.
+
+**`/word` is the important key.** On a repository whose specs and tests are
+written in different languages, similarity proposes nothing at all, so scoring
+cannot help you. Searching can: type a word you know is in the test title and
+pick from what comes back. Accents and case are ignored, so `/reglage` finds
+`Réglages` and `/ANONYMOUS` finds `anonymous`.
+
+`q` stops the walk and still writes everything decided so far. `--dry-run`
+decides everything and writes nothing. `--limit n` does a handful at a time,
+which is how this actually gets done: twenty minutes, once a week.
+
+The command never touches a scenario that already carries a directive, and
+running it twice in a row has nothing left to consider.
+
+It needs a terminal, since it asks a question per scenario. In CI, use
+`check --update-baseline` instead.
+
 ## Adopting on an existing repository
 
 A repository that has been writing specs for a while will start with hundreds
@@ -165,7 +206,8 @@ Turning it on first only teaches the team to pass `--allow-empty`.
 ## Options
 
 ```
-openspec-guard check [options]
+openspec-guard check [options]     report coverage, optionally gate on it
+openspec-guard link  [options]     walk unlinked scenarios and write selectors
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)
@@ -187,6 +229,12 @@ Output
   --verbose                Print every row, including passes and skips
   --no-color               Never emit ANSI colour
   --max-rows <n>           Rows per group before truncation (default: 20)
+
+link
+  --limit <n>              Stop after n scenarios
+  --max-candidates <n>     Candidates offered per scenario (default: 5)
+  --min-score <n>          Hide candidates below this similarity (default: 0)
+  --dry-run                Decide everything, write nothing
 
 Baseline
   --baseline <file>        Freeze the criteria listed there: gates ignore them
