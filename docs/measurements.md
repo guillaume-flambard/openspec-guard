@@ -1,0 +1,101 @@
+# What similarity actually does, measured
+
+Numbers below come from running the built CLI against real OpenSpec
+repositories on 2026-09-10, with default options and no annotations anywhere.
+No spec content from those repositories is reproduced here or in the fixtures;
+only aggregate counts and a few illustrative title pairs.
+
+## Two repositories, two very different answers
+
+| Repository           | Spec language | Criteria | pass | uncertain | fail | no candidate | low similarity |
+| -------------------- | ------------- | -------: | ---: | --------: | ---: | -----------: | -------------: |
+| Bilingual monorepo   | French        |      536 |    2 |        52 |  482 |          268 |            214 |
+| Single-language repo | English       |       44 |    1 |        16 |   27 |            1 |             26 |
+
+Both were run with 644 and 493 extracted test titles respectively, so neither
+result is a matter of having no tests to match against.
+
+## The bilingual case: similarity is inert
+
+Specs in French, test titles in English. 482 of 536 criteria fail, and half of
+those (268) share **not one significant word** with any of the 644 test titles
+in the repository. That is not a tuning problem. Jaccard compares tokens, and
+`{changer, langue}` and `{falls, back, unknown, language}` do not intersect.
+
+The two passes are exactly what the model predicts: lexical accidents on words
+that survive translation.
+
+```
+Scenario "Landing home"      -> test "landing home"                   score 1.00
+Scenario "Messages web en CI" -> test "web messages (Maestro 08)"      score 0.67
+```
+
+The first is right. The second is right by luck, on two borrowed words.
+
+The 52 `uncertain` are mostly noise, and they are worth reading before trusting
+any middle-band score:
+
+```
+"Voir les abonnés sur le web"  -> "web recipes"        score 0.25, shared: web
+"No-show, pas de remboursement" -> "does not show the count when absent"
+                                                        score 0.25, shared: show
+```
+
+`show` matching `no-show` is a token collision between two languages, not a
+link between a scenario and a test.
+
+**Conclusion for a bilingual repository: run with `--require-selector`.** It
+turns 482 vague failures into one actionable statement per criterion, and it
+stops the report from implying a relevance it does not have.
+
+## The single-language case: similarity works, with noise
+
+Specs and tests both in English. The single pass is a genuine link, found
+without any annotation:
+
+```
+Scenario "Keyboard moves between run tabs"
+     -> test "my runs > moves between the two tabs from the keyboard"
+        score 0.67, shared: keyboard, moves, between, tabs
+```
+
+Four shared significant words, and a human would draw the same line. This is
+what the heuristic is for.
+
+The 16 `uncertain` still contain real noise (`"Requesting a link"` against
+`"does not link a node to itself"`, one shared word), which is why the middle
+band is a verdict of its own rather than a pass.
+
+## Why the defaults are what they are
+
+The `--min-shared-terms 2` floor is doing real work: without it, every
+single-word collision above becomes a pass. The 0.6 pass threshold and the 0.25
+uncertain threshold produced, on these two repositories, zero false passes and
+a clearly separated noise band. That is the evidence for the defaults; it is
+not a proof that they are optimal on any other corpus.
+
+## Known limitation found by this measurement
+
+The monorepo contains a nested git worktree under `apps/mobile/.claude/`. The
+walker descends into it, so every test title in that worktree is indexed twice:
+38 criteria came back with a duplicate of their own best candidate in the
+runners-up, and any selector pointing at one of those titles would be reported
+as `selector-ambiguous`.
+
+SpecGuard does not special-case any tool's directory convention. Scope the run
+instead:
+
+```bash
+specguard check --tests "packages/**/*.test.ts" --tests "apps/web/**/*.test.ts"
+```
+
+## Reproducing
+
+```bash
+pnpm build
+node dist/cli.js check --cwd <repository> --format json > report.json
+node -e "const r=require('./report.json'); console.log(r.summary)"
+```
+
+Two runs on the same repository produce identical bytes, so a report can be
+committed and diffed.
