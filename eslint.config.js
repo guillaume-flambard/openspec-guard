@@ -4,9 +4,17 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'tests/fixtures/**'] },
+  // action-dist holds a generated bundle: it is an artifact, not source.
+  { ignores: ['dist/**', 'action-dist/**', 'node_modules/**', 'tests/fixtures/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Build scripts are plain Node ESM, outside the TypeScript program.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+  },
   {
     rules: {
       // A leading `_` marks a deliberately unused parameter.

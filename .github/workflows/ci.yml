@@ -42,7 +42,25 @@ jobs:
       - run: pnpm build
       - run: pnpm test
 
-      # SpecGuard checking its own fixture corpus. It is not a gate here: the
+      # A JavaScript action runs the committed bundle, so a stale bundle ships
+      # old behaviour while the source looks correct. Rebuilding and diffing is
+      # the only thing that keeps the two honest.
+      - name: The committed action bundle matches the source
+        run: |
+          git diff --exit-code --stat -- action-dist || {
+            echo "action-dist is out of date. Run pnpm build and commit it." >&2
+            exit 1
+          }
+
+      # openspec-guard checking its own fixture corpus. It is not a gate here: the
       # corpus deliberately contains failing cases.
       - name: Self check
         run: node dist/cli.js check --cwd tests/fixtures/corpus --include-changes
+
+      # The Action, run as the runner would run it, against a fixture that is
+      # known to fail: proof the bundle loads and that the gate turns the step
+      # red for the right reason.
+      - name: The action bundle runs
+        run: node action-dist/index.cjs
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}/tests/fixtures/pass-explicit

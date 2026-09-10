@@ -1,0 +1,97 @@
+name: openspec-guard
+description: >-
+  Report which OpenSpec scenarios are covered by a Vitest or Jest test, and
+  optionally fail the build on the ones that are not.
+author: Guillaume Flambard
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  working-directory:
+    description: Directory to run in, relative to the workspace.
+    required: false
+  specs:
+    description: 'Spec root. Defaults to openspec/specs, else specs.'
+    required: false
+  code:
+    description: Code root. Defaults to the working directory.
+    required: false
+  tests:
+    description: Test file globs, comma or newline separated.
+    required: false
+  runner:
+    description: 'vitest or jest. Skips detection.'
+    required: false
+  include-changes:
+    description: Also read delta specs under openspec/changes.
+    required: false
+    default: 'false'
+  allow-empty:
+    description: Succeed on a spec root that holds no spec.md.
+    required: false
+    default: 'false'
+  require-selector:
+    description: Turn similarity off; only explicit selectors link.
+    required: false
+    default: 'false'
+  baseline:
+    description: Path to a baseline file. Gates ignore what it lists.
+    required: false
+  update-baseline:
+    description: Rewrite the baseline from this run instead of checking.
+    required: false
+    default: 'false'
+  fail-on:
+    description: 'Verdicts that must not appear, comma separated.'
+    required: false
+  min-pass:
+    description: Minimum number of passing criteria.
+    required: false
+  pass-threshold:
+    description: Similarity needed to pass. Default 0.6.
+    required: false
+  uncertain-threshold:
+    description: Similarity needed to be uncertain. Default 0.25.
+    required: false
+  min-shared-terms:
+    description: Shared words needed to pass. Default 2.
+    required: false
+  format:
+    description: 'terminal or json, for the step log.'
+    required: false
+    default: terminal
+  annotations:
+    description: Annotate uncovered scenarios on the changed files.
+    required: false
+    default: 'true'
+  max-annotations:
+    description: >-
+      How many annotations to emit. GitHub displays at most ten per level per
+      step, so a larger number only fills the log.
+    required: false
+    default: '20'
+  summary:
+    description: Write a table to the job summary.
+    required: false
+    default: 'true'
+
+outputs:
+  total:
+    description: Number of criteria found.
+  pass:
+    description: Criteria linked to a test.
+  uncertain:
+    description: Criteria with a candidate in the uncertain band.
+  fail:
+    description: Criteria with no usable link.
+  skip:
+    description: Criteria declared non-testable.
+  baselined:
+    description: Criteria frozen by the baseline.
+  gate-passed:
+    description: 'true when no gate was violated.'
+
+runs:
+  using: node24
+  main: action-dist/index.cjs

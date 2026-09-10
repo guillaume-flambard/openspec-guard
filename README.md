@@ -195,6 +195,95 @@ Both gates apply together, and both violations are reported when both break.
 
 ## In CI
 
+As a step, with no install:
+
+```yaml
+- uses: guillaume-flambard/openspec-guard@v0
+  with:
+    fail-on: fail
+    baseline: .openspec-guard-baseline.json
+```
+
+Uncovered scenarios come back as annotations on the spec files themselves, in
+the diff, where a reviewer already is. The step also writes a table to the job
+summary and exposes `total`, `pass`, `uncertain`, `fail`, `skip`, `baselined`
+and `gate-passed` as outputs.
+
+GitHub displays at most ten annotations per level per step, so `max-annotations`
+defaults to 20 and the rest are counted in the summary rather than lost.
+
+Or as a plain command, if you would rather not add an action:
+
+```yaml
+- run: npx openspec-guard check --fail-on fail
+```
+
+Start without a gate, read the report, freeze the debt, then turn the gate on.
+Turning it on first only teaches the team to pass `--allow-empty`.
+
+## Adopting on an existing repository
+
+A repository that has been writing specs for a while will start with hundreds
+of uncovered scenarios. Fixing them all before turning the gate on means the
+gate never gets turned on, so freeze them instead:
+
+```bash
+openspec-guard check --update-baseline
+git add .openspec-guard-baseline.json
+```
+
+Then gate on what is new:
+
+```bash
+openspec-guard check --baseline .openspec-guard-baseline.json --fail-on fail
+```
+
+Today's debt is recorded and ignored by the gate. A scenario added tomorrow
+without a test fails the build.
+
+The baseline is a committed JSON file, sorted, with no timestamp, so it diffs
+cleanly in a pull request and a reviewer can see exactly what was frozen.
+
+Three things it deliberately does **not** let you get away with:
+
+- **A new scenario is never frozen.** Only what existed at freeze time is.
+- **A different kind of failure stops being suppressed.** If a criterion was
+  frozen as `no-candidate` and now reads `selector-unmatched`, someone wrote a
+  selector pointing at a test that does not exist. That is a fresh mistake, not
+  old debt, and the gate fires.
+- **Rewriting a scenario un-freezes it.** Criterion ids hash the scenario text,
+  so an edited scenario gets a new id, its entry stops matching, and you are
+  asked about its test again. Which is the right moment to ask.
+
+Entries that no longer match anything, because the scenario was fixed,
+rewritten or deleted, are reported so the file can be pruned with
+`--update-baseline` instead of growing forever.
+
+## Exit codes
+
+| Code | Meaning                                                   |
+| ---- | --------------------------------------------------------- |
+| `0`  | Success                                                   |
+| `1`  | A gate was violated, and nothing else                     |
+| `2`  | The input or an option is at fault                        |
+| `3`  | An internal error: a OpenSpec Guard bug, please report it |
+
+`2` and `3` are kept apart on purpose. A `2` is your input; a `3` is our bug.
+Collapsing them turns every regression of this tool into a hunt for an innocent
+spec file.
+
+By default a run exits `0` even with failures: it reports, it does not judge.
+Gates are opt-in.
+
+```bash
+openspec-guard check --fail-on fail,uncertain
+openspec-guard check --min-pass 40
+```
+
+Both gates apply together, and both violations are reported when both break.
+
+## In CI
+
 ```yaml
 - name: Spec coverage
   run: npx openopenspec-guard check --fail-on fail,uncertain
