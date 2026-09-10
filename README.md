@@ -108,8 +108,8 @@ By default a run exits `0` even with failures: it reports, it does not judge.
 Gates are opt-in.
 
 ```bash
-specguard check --fail-on fail,uncertain
-specguard check --min-pass 40
+spec-guard check --fail-on fail,uncertain
+spec-guard check --min-pass 40
 ```
 
 Both gates apply together, and both violations are reported when both break.
@@ -127,7 +127,7 @@ Turning it on first only teaches the team to pass `--allow-empty`.
 ## Options
 
 ```
-specguard check [options]
+spec-guard check [options]
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)
@@ -164,7 +164,7 @@ default run collects those titles too, and they pollute the index.
 human-facing line goes to stderr. So this is exactly the document:
 
 ```bash
-specguard check --format json > coverage.json
+spec-guard check --format json > coverage.json
 ```
 
 Its guarantees are part of the contract, not an implementation detail:
@@ -211,6 +211,18 @@ const { report, exitCode } = await runCheck({
 ## Requirements
 
 Node 20.11 or later.
+
+## A note on the name
+
+There is an unrelated package called `specguard` on npm, published in February
+2026, which also ships a binary named `specguard`. This package is scoped, so
+there is no ambiguity about what you install, and its binary is named
+`spec-guard` so that installing both globally does not break either one.
+
+```bash
+npx @memo-labs/specguard check   # no install
+pnpm add -D @memo-labs/specguard # then: pnpm spec-guard check
+```
 
 ## License
 

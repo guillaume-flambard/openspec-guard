@@ -17,13 +17,13 @@ import { VERSION } from './version.js';
  * unknown options raise instead of being silently ignored.
  */
 
-const HELP = `specguard ${VERSION}
+const HELP = `spec-guard ${VERSION}
 
   Check which OpenSpec scenarios are covered by a Vitest or Jest test.
   Reads specs and test titles. Never runs the tests. Never calls an LLM.
 
 Usage
-  specguard check [options]
+  spec-guard check [options]
 
 Discovery
   --cwd <dir>              Working directory (default: the current one)

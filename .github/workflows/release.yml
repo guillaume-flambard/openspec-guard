@@ -1,0 +1,62 @@
+name: Release
+
+# Publishing is a deliberate act: pushing a tag is the only trigger, and
+# workflow_dispatch exists so a failed publish can be retried without inventing
+# a new tag.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Required for npm provenance: the OIDC token is what lets npm attest that
+  # this tarball was built from this commit, in this workflow.
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # The full gate runs again here. A tag is not a promise that CI was green
+      # on that commit, so we prove it rather than assume it.
+      - run: pnpm lint
+      - run: pnpm format
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+
+      # Refuse to publish a tag that disagrees with the manifest. Without this,
+      # `git tag v0.2.0` on a 0.1.0 manifest silently republishes 0.1.0.
+      - name: Check the tag matches the manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          manifest="$(node -p "require('./package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$manifest" != "$tag" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $manifest" >&2
+            exit 1
+          fi
+
+      - name: Publish to npm with provenance
+        run: pnpm publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

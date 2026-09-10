@@ -107,7 +107,7 @@ SpecGuard does not special-case any tool's directory convention. Scope the run
 instead:
 
 ```bash
-specguard check --tests "packages/**/*.test.ts" --tests "apps/web/**/*.test.ts"
+spec-guard check --tests "packages/**/*.test.ts" --tests "apps/web/**/*.test.ts"
 ```
 
 ## Reproducing

@@ -45,7 +45,7 @@ describe('specguard CLI', () => {
   it('prints help and exits zero', async () => {
     const result = await cli('--help');
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain('specguard check [options]');
+    expect(result.stdout).toContain('spec-guard check [options]');
   });
 
   it('prints the version and exits zero', async () => {
