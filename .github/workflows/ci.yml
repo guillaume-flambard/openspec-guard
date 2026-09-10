@@ -68,3 +68,22 @@ jobs:
         run: node action-dist/index.cjs
         env:
           INPUT_WORKING-DIRECTORY: tests/fixtures/pass-explicit
+
+  # The action as a consumer sees it: action.yml, its defaults, its inputs and
+  # its outputs. The job above only proves the bundle loads.
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: guard
+        uses: ./
+        with:
+          working-directory: tests/fixtures/pass-explicit
+          fail-on: fail,uncertain
+
+      - name: The outputs say what the report said
+        run: |
+          test "${{ steps.guard.outputs.total }}" = "1"
+          test "${{ steps.guard.outputs.pass }}" = "1"
+          test "${{ steps.guard.outputs.gate-passed }}" = "true"
