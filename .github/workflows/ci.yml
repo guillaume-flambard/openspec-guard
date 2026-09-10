@@ -52,10 +52,16 @@ jobs:
             exit 1
           }
 
-      # openspec-guard checking its own fixture corpus. It is not a gate here: the
-      # corpus deliberately contains failing cases.
-      - name: Self check
+      # openspec-guard checking its own fixture corpus. It is not a gate here:
+      # the corpus deliberately contains failing cases.
+      - name: Self check, on the fixture corpus
         run: node dist/cli.js check --cwd tests/fixtures/corpus --include-changes
+
+      # The real one. This repository's own behaviour is specified in OpenSpec
+      # and every scenario is linked to the test that covers it, so a scenario
+      # added without a test fails this build.
+      - name: Spec coverage of this repository
+        run: pnpm spec:check
 
       # The Action, run as the runner would run it, against a fixture that is
       # known to fail: proof the bundle loads and that the gate turns the step

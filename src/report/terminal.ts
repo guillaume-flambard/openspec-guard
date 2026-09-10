@@ -86,6 +86,20 @@ function rowsOf(result: CriterionResult): string[] {
   return rows;
 }
 
+/**
+ * Evidence is capped in the terminal. A monorepo full of fixture manifests can
+ * produce twenty lines of it, which buries the three numbers that matter. The
+ * JSON report keeps the whole list.
+ */
+const MAX_EVIDENCE = 4;
+
+function renderEvidence(evidence: readonly string[]): string {
+  if (evidence.length === 0) return '';
+  const shown = evidence.slice(0, MAX_EVIDENCE).join(', ');
+  const rest = evidence.length - MAX_EVIDENCE;
+  return `  [${shown}${rest > 0 ? `, and ${rest} more` : ''}]`;
+}
+
 function headerOf(report: Report): string[] {
   const { input } = report;
   return [
@@ -93,9 +107,7 @@ function headerOf(report: Report): string[] {
     `  specs   ${input.specRoot}  (${input.specFileCount} files, ${report.summary.total} criteria)`,
     `  code    ${input.codeRoot}  (${input.testFileCount} test files, ` +
       `${input.testTitleCount} titles)`,
-    `  runner  ${input.runner}${
-      input.runnerEvidence.length > 0 ? `  [${input.runnerEvidence.join(', ')}]` : ''
-    }`,
+    `  runner  ${input.runner}${renderEvidence(input.runnerEvidence)}`,
     '',
   ];
 }

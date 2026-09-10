@@ -364,6 +364,31 @@ or removing an annotation does not move it. Editing the scenario body does:
 that is the correct signal for "the spec changed", and it means ids are not
 permanent identifiers. Do not build a suppression file on them yet.
 
+## It checks itself
+
+This repository's own behaviour is specified in OpenSpec, under `openspec/specs`,
+and every scenario is linked to the test that covers it. The build runs:
+
+```bash
+pnpm spec:check
+```
+
+```
+188 criteria: 187 pass (187 by selector, 0 by similarity), 0 uncertain, 0 fail, 1 skip
+```
+
+Twelve capabilities, 188 scenarios, one of them declared non-testable with its
+reason: how many annotations GitHub renders per step is GitHub's decision, and
+nothing here can observe it. A scenario added to those specs without a test
+fails the build.
+
+Two things worth noticing in that line. Every pass is earned by an explicit
+selector and none by similarity, on a repository whose specs and tests were
+written together, in the same language, by the same person, in the same sitting.
+And the run reports one test title it could not read statically, a title built
+in a loop in `src/verdict.test.ts`, which is the documented limitation showing up
+in the tool's own house rather than in somebody else's.
+
 ## What it does not do
 
 Not in this version: `node:test`, spec formats other than OpenSpec, a baseline
