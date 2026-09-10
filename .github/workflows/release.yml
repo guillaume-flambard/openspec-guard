@@ -5,7 +5,10 @@ name: Release
 # a new tag.
 on:
   push:
-    tags: ['v*']
+    # Full version tags only. The moving major tag `v0`, which the Action is
+    # used through, points at a commit whose manifest says 0.2.0, so it can
+    # never match the version check below and has no release to cut anyway.
+    tags: ['v*.*.*']
   workflow_dispatch:
 
 permissions:
