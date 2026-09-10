@@ -7,9 +7,15 @@ It reads your specs and the titles of your Vitest or Jest tests. It never runs
 the tests, never imports your code, and never calls an LLM. The same input
 always produces the same bytes.
 
-```bash
-npx @memo-labs/specguard check
-```
+> **Not on npm yet.** The package name is being settled: `specguard` is taken by
+> an unrelated tool, and npm rejects `spec-guard` as too similar to it. Until a
+> scope is published here, build from source:
+>
+> ```bash
+> git clone https://github.com/guillaume-flambard/spec-guard
+> cd spec-guard && pnpm install && pnpm build
+> node dist/cli.js check
+> ```
 
 ## Link a scenario to a test
 
@@ -118,7 +124,7 @@ Both gates apply together, and both violations are reported when both break.
 
 ```yaml
 - name: Spec coverage
-  run: npx @memo-labs/specguard check --fail-on fail,uncertain
+  run: npx spec-guard check --fail-on fail,uncertain # once published; see the note on the name
 ```
 
 Start without a gate, read the report, add selectors, then turn the gate on.
@@ -198,7 +204,7 @@ whether a test is any good, only whether one exists.
 ## Programmatic use
 
 ```ts
-import { runCheck, renderJson } from '@memo-labs/specguard';
+import { runCheck, renderJson } from 'spec-guard';
 
 const { report, exitCode } = await runCheck({
   cwd: process.env.GITHUB_WORKSPACE ?? process.cwd(),
@@ -214,15 +220,14 @@ Node 20.11 or later.
 
 ## A note on the name
 
-There is an unrelated package called `specguard` on npm, published in February
-2026, which also ships a binary named `specguard`. This package is scoped, so
-there is no ambiguity about what you install, and its binary is named
-`spec-guard` so that installing both globally does not break either one.
+There is an unrelated package called `specguard`, one word, published on npm in
+February 2026, which also ships a binary named `specguard`. This project is
+`spec-guard`, hyphenated, and its binary is `spec-guard`, so the two can live
+side by side once this one is published.
 
-```bash
-npx @memo-labs/specguard check   # no install
-pnpm add -D @memo-labs/specguard # then: pnpm spec-guard check
-```
+npm's own similarity check rejects the unscoped name `spec-guard` for being too
+close to `specguard`, so this will ship under a scope. Do not install anything
+under `@memo-labs`: that scope belongs to an unrelated account.
 
 ## License
 
