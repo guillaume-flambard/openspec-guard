@@ -74,8 +74,33 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Trusted publishing needs npm 11.5.1 or later. Node 24 ships a newer one,
+      # but a runner image can move: fail here with a sentence anyone can act
+      # on, rather than at the publish step with an authentication error.
+      - name: The npm CLI is new enough for trusted publishing
+        if: steps.published.outputs.exists == 'false'
+        run: |
+          version="$(npm --version)"
+          echo "npm $version"
+          NPM_VERSION="$version" node -e '
+            const [major, minor, patch] = process.env.NPM_VERSION.split(".").map(Number);
+            const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            if (!ok) {
+              console.error(`npm ${process.env.NPM_VERSION} is too old for trusted publishing (needs 11.5.1).`);
+              process.exit(1);
+            }
+          '
+
+      # No token anywhere, on purpose. npm removed classic and automation tokens
+      # in November 2025, and a granular token's "bypass 2FA" option stops being
+      # able to publish in January 2027. Trusted publishing replaces them: npm
+      # trades this workflow's OIDC identity for a short-lived credential, so
+      # the only thing that can publish this package is this workflow, in this
+      # repository. The other side of it is configured on npmjs.com, and npm
+      # does not validate that entry when it is saved, so a typo there only ever
+      # surfaces here.
+      #
+      # npm, not pnpm: pnpm's documentation does not claim OIDC support.
       - name: Publish to npm with provenance
         if: steps.published.outputs.exists == 'false'
-        run: pnpm publish --access public --provenance --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance

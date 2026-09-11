@@ -40,7 +40,7 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "test": "vitest run",
-    "prepack": "pnpm build",
+    "prepare": "npm run build",
     "build:action": "node scripts/build-action.mjs",
     "spec:check": "node dist/cli.js check --tests \"src/**/*.test.ts\" --tests \"tests/*.test.ts\" --runner vitest --fail-on fail,uncertain",
     "spec:link": "node dist/cli.js link --tests \"src/**/*.test.ts\" --tests \"tests/*.test.ts\" --runner vitest"

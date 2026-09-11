@@ -8,7 +8,7 @@ the tests, never imports your code, and never calls an LLM. The same input
 always produces the same bytes.
 
 ```bash
-npx openopenspec-guard check
+npx openspec-guard check
 ```
 
 ## Link a scenario to a test
@@ -316,7 +316,7 @@ Both gates apply together, and both violations are reported when both break.
 
 ```yaml
 - name: Spec coverage
-  run: npx openopenspec-guard check --fail-on fail,uncertain
+  run: npx openspec-guard check --fail-on fail,uncertain
 ```
 
 Start without a gate, read the report, add selectors, then turn the gate on.
